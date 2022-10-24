@@ -1,7 +1,7 @@
 """setup.py
 python setup.py sdist
-twine upload --repository pypitest dist/pylibprobe-x.x.x.tar.gz
-twine upload --repository pypi dist/pylibprobe-x.x.x.tar.gz
+twine upload --repository pypitest dist/libprobe-x.x.x.tar.gz
+twine upload --repository pypi dist/libprobe-x.x.x.tar.gz
 """
 from setuptools import setup, find_packages
 from libprobe.version import __version__ as version
@@ -19,7 +19,7 @@ install_requires = [
 ]
 
 setup(
-    name='pylibprobe',
+    name='libprobe',
     packages=find_packages(),
     version=version,
     description='Library for building InfraSonar probes',
@@ -27,10 +27,10 @@ setup(
     long_description_content_type='text/markdown',
     author='Cesbit',
     author_email='info@cesbit.com',
-    url='https://github.com/infrasonar/pylibprobe',
+    url='https://github.com/infrasonar/python-libprobe',
     download_url=(
         'https://github.com/infrasonar/'
-        'pylibprobe/tarball/v{}'.format(version)),
+        'python-libprobe/tarball/v{}'.format(version)),
     keywords=['monitoring', 'infrasonar', 'probe'],
     install_requires=install_requires,
     classifiers=[

@@ -1,5 +1,5 @@
-[![CI](https://github.com/infrasonar/pylibprobe/workflows/CI/badge.svg)](https://github.com/infrasonar/pylibprobe/actions)
-[![Release Version](https://img.shields.io/github/release/infrasonar/pylibprobe)](https://github.com/infrasonar/pylibprobe/releases)
+[![CI](https://github.com/infrasonar/python-libprobe/workflows/CI/badge.svg)](https://github.com/infrasonar/python-libprobe/actions)
+[![Release Version](https://img.shields.io/github/release/infrasonar/python-libprobe)](https://github.com/infrasonar/python-libprobe/releases)
 
 # Python library for building InfraSonar Probes
 
