@@ -3,7 +3,7 @@
 
 # Python library for building InfraSonar Probes
 
-This library is created for building [InfraSonar](#https://infrasonar.com) probes.
+This library is created for building [InfraSonar](https://infrasonar.com) probes.
 
 ## Environment variable
 
