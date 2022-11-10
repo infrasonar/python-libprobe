@@ -28,7 +28,7 @@ INFRASONAR_CONF_FN = \
     os.getenv('INFRASONAR_CONF', '/data/config/infrasonar.yaml')
 
 # Index in path
-CONTAINER_ID, ASSET_ID, CHECK_ID = range(3)
+ASSET_ID, CHECK_ID = range(2)
 
 # Index in names
 ASSET_NAME_IDX, CHECK_NAME_IDX = range(2)
@@ -130,7 +130,7 @@ class Probe:
             error: Optional[dict],
             ts: float):
         assert (result is None) ^ (error is None)
-        _, asset_id, _ = path
+        asset_id, _ = path
         check_data = {
             'result': result,
             'error': error,
@@ -240,7 +240,7 @@ class Probe:
             )
 
     async def _run_check_loop(self, path: tuple):
-        _, asset_id, _ = path
+        asset_id, _ = path
         (asset_name, check_name), config = self._checks_config[path]
         interval = config.get('_interval')
         fun = self._checks_funs[check_name]
