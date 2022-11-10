@@ -65,9 +65,9 @@ class Probe:
         self._local_config: Optional[dict] = None
         self._local_config_mtime: Optional[float] = None
         self._checks_config: Dict[
-            Tuple[int, int, int],
+            Tuple[int, int],
             Tuple[Tuple[str, str], dict]] = {}
-        self._checks: Dict[Tuple[int, int, int], asyncio.Future] = {}
+        self._checks: Dict[Tuple[int, int], asyncio.Future] = {}
 
         if not os.path.exists(config_path):
             logging.error(f"config file not found: {config_path}")
