@@ -140,9 +140,6 @@ class Probe:
         except asyncio.exceptions.CancelledError:
             pass
 
-        if self._protocol and self._protocol.transport:
-            self._protocol.transport.close()
-
     async def _connect(self):
         conn = asyncio.get_event_loop().create_connection(
             lambda: AgentcoreProtocol(
