@@ -47,7 +47,7 @@ class Probe:
         name: str,
         version: str,
         checks: Dict[str, Callable[[Asset, dict, dict], dict]],
-        config_path: str = INFRASONAR_CONF_FN
+        config_path: Optional[str] = INFRASONAR_CONF_FN
     ):
         setproctitle(name)
         setup_logger()
@@ -99,7 +99,11 @@ class Probe:
 
     async def _connect(self):
         conn = asyncio.get_event_loop().create_connection(
-            lambda: AgentcoreProtocol(self._on_assets),
+            lambda: AgentcoreProtocol(
+                self._on_set_assets,
+                self._on_unset_assets,
+                self._on_upsert_asset,
+            ),
             host=AGENTCORE_HOST,
             port=AGENTCORE_PORT
         )
@@ -193,21 +197,21 @@ class Probe:
         asset_ids = set(asset_ids)
         new_checks_config = {
             path: config
-            for path, config in self._checks_config.keys()
+            for path, config in self._checks_config.items()
             if path[ASSET_ID] not in asset_ids}
         self._set_new_checks_config(new_checks_config)
 
     def _on_upsert_asset(self, asset: list):
         asset_id, checks = asset
-        keep = {
+        new_checks_config = {
             path: config
-            for path, config in self._checks_config.keys()
+            for path, config in self._checks_config.items()
             if path[ASSET_ID] != asset_id}
         new = {
             tuple(path): (names, config)
             for path, names, config in checks
             if names[CHECK_NAME_IDX] in self._checks_funs}
-        new_checks_config = keep.update(new)
+        new_checks_config.update(new)
         self._set_new_checks_config(new_checks_config)
 
     def _on_set_assets(self, assets: list):

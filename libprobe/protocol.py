@@ -23,13 +23,20 @@ class AgentcoreProtocol(Protocol):
 
     PROTO_RES_INFO = 0x82
 
-    def __init__(self, _on_assets: Callable):
+    def __init__(
+        self,
+        on_set_assets: Callable,
+        on_unset_assets: Callable,
+        on_upsert_asset: Callable,
+    ):
         super().__init__()
-        self._on_assets = _on_assets
+        self._on_set_assets = on_set_assets
+        self._on_unset_assets = on_unset_assets
+        self._on_upsert_asset = on_upsert_asset
 
     def _on_res_announce(self, pkg: Package):
         logging.debug(f"on announce; data size: {len(pkg.data)}")
-        self._on_assets(pkg.data)
+        self._on_set_assets(pkg.data)
 
         future = self._get_future(pkg)
         if future is None:
