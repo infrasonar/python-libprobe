@@ -16,6 +16,8 @@ install_requires = [
     'colorlog',
     'msgpack',
     'setproctitle',
+    'pyyaml',
+    'cryptography'
 ]
 
 setup(
