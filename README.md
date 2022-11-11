@@ -22,7 +22,6 @@ Variable         | Default                       | Description
 Building an InfraSonar.
 
 ```python
-import asyncio
 import logging
 from libprobe.asset import Asset
 from libprobe.probe import Probe
@@ -90,5 +89,5 @@ if __name__ == "__main__":
     probe = Probe("myProbe", __version__, checks)
 
     # Start the probe
-    asyncio.run(probe.start())
+    probe.start()
 ```

@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import random
+import signal
 import time
 import yaml
 from cryptography.fernet import Fernet
@@ -109,7 +110,14 @@ class Probe:
     def is_connecting(self) -> bool:
         return self._connecting
 
-    async def start(self):
+    def _stop(self, signame, *args):
+        logging.warning(
+            f'signal \'{signame}\' received, stop {self.name} probe')
+        for task in asyncio.all_tasks():
+            task.cancel()
+        asyncio.get_event_loop().stop()
+
+    async def _start(self):
         initial_step = 2
         step = 2
         max_step = 2 ** 7
@@ -120,7 +128,20 @@ class Probe:
                 step = min(step * 2, max_step)
             else:
                 step = initial_step
-            await asyncio.sleep(step)
+            for _ in range(step):
+                await asyncio.sleep(1)
+
+    def start(self):
+        signal.signal(signal.SIGINT, self._stop)
+        signal.signal(signal.SIGTERM, self._stop)
+
+        try:
+            asyncio.run(self._start())
+        except asyncio.exceptions.CancelledError:
+            pass
+
+        if self._protocol and self._protocol.transport:
+            self._protocol.transport.close()
 
     async def _connect(self):
         conn = asyncio.get_event_loop().create_connection(
