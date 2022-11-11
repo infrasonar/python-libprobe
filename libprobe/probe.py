@@ -88,6 +88,9 @@ class Probe:
 
         if not os.path.exists(config_path):
             try:
+                parent = os.path.dirname(config_path)
+                if not os.path.exists(parent):
+                    os.mkdir(parent)
                 with open(self._config_path, 'w') as file:
                     file.write(HEADER_FILE)
             except Exception:
