@@ -21,6 +21,23 @@ from .asset import Asset
 from .severity import Severity
 from .config import encrypt, decrypt, get_config
 
+HEADER_FILE = """
+# WARNING: InfraSonar will make `password` and `secret` values unreadable but
+# this must not be regarded as true encryption as the encryption key is
+# publically available.
+#
+# Example configuration for `myprobe` collector:
+#
+#  myprobe:
+#    config:
+#      username: alice
+#      password: "secret password"
+#    assets:
+#      - id: 12345
+#        config:
+#          username: bob
+#          password: "my secret"
+""".lstrip()
 
 AGENTCORE_HOST = os.getenv('AGENTCORE_HOST', '127.0.0.1')
 AGENTCORE_PORT = int(os.getenv('AGENTCORE_PORT', 8750))
@@ -70,12 +87,17 @@ class Probe:
         self._checks: Dict[Tuple[int, int], asyncio.Future] = {}
 
         if not os.path.exists(config_path):
-            logging.error(f"config file not found: {config_path}")
-            exit(0)
+            try:
+                with open(self._config_path, 'w') as file:
+                    file.write(HEADER_FILE)
+            except Exception:
+                logging.exception(f"cannot write file: {config_path}")
+                exit(0)
+            logging.warning(f"created a new configuration file: {config_path}")
         try:
             self._read_local_config()
         except Exception:
-            logging.exception(f"config file invalid: {config_path}")
+            logging.exception(f"configuration file invalid: {config_path}")
             exit(0)
 
     def is_connected(self) -> bool:
@@ -170,11 +192,7 @@ class Probe:
 
             # Re-write the file
             with open(self._config_path, 'w') as file:
-                file.write("""
-# WARNING: InfraSonar will make `password` and `secret` values unreadable but
-# this must not be regarded as true encryption as the encryption key is
-# publically available.
-""".lstrip())
+                file.write(HEADER_FILE)
                 file.write(yaml.dump(config))
 
             # Now decrypt everything so we can use the configuration
