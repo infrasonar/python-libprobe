@@ -96,13 +96,13 @@ class Probe:
                     file.write(HEADER_FILE)
             except Exception:
                 logging.exception(f"cannot write file: {config_path}")
-                exit(0)
+                exit(1)
             logging.warning(f"created a new configuration file: {config_path}")
         try:
             self._read_local_config()
         except Exception:
             logging.exception(f"configuration file invalid: {config_path}")
-            exit(0)
+            exit(1)
 
     def is_connected(self) -> bool:
         return self._protocol is not None and self._protocol.is_connected()
