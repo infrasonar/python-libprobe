@@ -115,7 +115,6 @@ class Probe:
             f'signal \'{signame}\' received, stop {self.name} probe')
         for task in asyncio.all_tasks():
             task.cancel()
-        asyncio.get_event_loop().stop()
 
     async def _start(self):
         initial_step = 2
@@ -138,7 +137,9 @@ class Probe:
         try:
             asyncio.run(self._start())
         except asyncio.exceptions.CancelledError:
-            pass
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.close()
 
     async def _connect(self):
         conn = asyncio.get_event_loop().create_connection(
