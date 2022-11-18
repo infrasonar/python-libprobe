@@ -70,6 +70,7 @@ class Probe:
         setproctitle(name)
         setup_logger()
         logging.warning(f'starting probe collector: {name} v{version}')
+        self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.name: str = name
         self.version: str = version
         self._checks_funs: Dict[
@@ -138,7 +139,7 @@ class Probe:
         try:
             self.loop.run_until_complete(self._start())
         except asyncio.exceptions.CancelledError:
-            self.loop.run_until_complete(loop.shutdown_asyncgens())
+            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
             self.loop.close()
 
     async def _connect(self):
