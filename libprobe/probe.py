@@ -134,15 +134,15 @@ class Probe:
         signal.signal(signal.SIGINT, self._stop)
         signal.signal(signal.SIGTERM, self._stop)
 
+        self.loop = asyncio.get_event_loop()
         try:
-            asyncio.run(self._start())
+            self.loop.run_until_complete(self._start())
         except asyncio.exceptions.CancelledError:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(loop.shutdown_asyncgens())
-            loop.close()
+            self.loop.run_until_complete(loop.shutdown_asyncgens())
+            self.loop.close()
 
     async def _connect(self):
-        conn = asyncio.get_event_loop().create_connection(
+        conn = self.loop.create_connection(
             lambda: AgentcoreProtocol(
                 self._on_set_assets,
                 self._on_unset_assets,
