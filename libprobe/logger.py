@@ -2,10 +2,6 @@ import colorlog
 import logging.handlers
 import os
 
-_LOG_LEVEL = os.getenv('LOG_LEVEL', 'warning')
-_LOG_COLORIZED = int(os.getenv('LOG_COLORIZED', '0'))
-_LOG_DATE_FMT = os.getenv('LOG_FMT', '%y%m%d %H:%M:%S')
-
 
 _MAP_LOG_LEVELS = {
     'DEBUG': logging.DEBUG,
@@ -18,6 +14,10 @@ _MAP_LOG_LEVELS = {
 
 def setup_logger():
     """Setup logger."""
+
+    _LOG_LEVEL = os.getenv('LOG_LEVEL', 'warning')
+    _LOG_COLORIZED = int(os.getenv('LOG_COLORIZED', '0'))
+    _LOG_DATE_FMT = os.getenv('LOG_FMT', '%y%m%d %H:%M:%S')
 
     if _LOG_COLORIZED:
         # setup colorized formatter
