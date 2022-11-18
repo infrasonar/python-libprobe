@@ -69,7 +69,7 @@ class Probe:
     ):
         setproctitle(name)
         setup_logger()
-
+        logging.warning(f'starting probe collector: {name} v{version}')
         self.name: str = name
         self.version: str = version
         self._checks_funs: Dict[
