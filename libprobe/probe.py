@@ -299,8 +299,11 @@ class Probe:
         ts_next = int(ts + random.random() * interval) + 1
 
         while True:
-            assert ts < ts_next
-
+            if ts < ts_next:
+                logging.error('scheduled timestamp is lower than current'
+                              'timestamp')
+                ts_next = ts
+            
             try:
                 await asyncio.sleep(ts_next - ts)
             except asyncio.CancelledError:
