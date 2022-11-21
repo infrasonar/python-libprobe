@@ -300,10 +300,11 @@ class Probe:
 
         while True:
             if ts < ts_next:
-                logging.error('scheduled timestamp is lower than current'
-                              'timestamp')
+                # This can happen when a computer clock has been changed
+                logging.error('scheduled timestamp in the past; '
+                              'maybe the computer clock has been changed?')
                 ts_next = ts
-            
+
             try:
                 await asyncio.sleep(ts_next - ts)
             except asyncio.CancelledError:
