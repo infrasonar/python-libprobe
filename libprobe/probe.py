@@ -299,7 +299,7 @@ class Probe:
         ts_next = int(ts + random.random() * interval) + 1
 
         while True:
-            if ts < ts_next:
+            if ts > ts_next:
                 # This can happen when a computer clock has been changed
                 logging.error('scheduled timestamp in the past; '
                               'maybe the computer clock has been changed?')
