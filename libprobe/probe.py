@@ -185,7 +185,7 @@ class Probe:
             'error': error,
             'framework': {
                 'duration': time.time() - ts,
-                'timestamp': ts,
+                'timestamp': int(ts),
             }
         }
         pkg = Package.make(
@@ -296,7 +296,7 @@ class Probe:
         assert isinstance(interval, int) and interval > 0
 
         ts = time.time()
-        ts_next = int(ts + random.random() * interval) + 1
+        ts_next = (ts + random.random() * interval) + 1.0
 
         while True:
             if ts > ts_next:
