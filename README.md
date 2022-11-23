@@ -66,18 +66,19 @@ async def my_first_check(asset: Asset, asset_config: dict, check_config: dict):
         # other exceptions will be converted to CheckException, MEDIUM severity
         raise Exception("something went wrong")
 
-    result = {"myType": {"myItem": {"myMetric": "some value"}}}
+    # A check result may have multiple types, items, and/or metrics
+    result = {"myType": [{"name": "my item"}]}
 
     if "result_is_incomplete":
         # optionally, IncompleteResultException can be given another severity;
         # the default severity is LOW.
         raise IncompleteResultException('missing type x', result)
 
-    # Use the asset in logging; this will include asset info and the check name
+    # Use the asset in logging; this will include asset info and the check key
     logging.info(f"log something; {asset}")
 
-    # A check result may have multiple types, items, and/or metrics
-    return {"myType": {"myItem": {"myMetric": "some value"}}}
+    # Return the check result
+    return result
 
 
 if __name__ == "__main__":

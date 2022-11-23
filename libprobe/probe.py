@@ -286,10 +286,10 @@ class Probe:
 
     async def _run_check_loop(self, path: tuple):
         asset_id, _ = path
-        (asset_name, check_name), config = self._checks_config[path]
+        (asset_name, check_key), config = self._checks_config[path]
         interval = config.get('_interval')
-        fun = self._checks_funs[check_name]
-        asset = Asset(asset_id, asset_name, check_name)
+        fun = self._checks_funs[check_key]
+        asset = Asset(asset_id, asset_name, check_key)
 
         my_task = self._checks[path]
 
@@ -317,8 +317,8 @@ class Probe:
             interval = config.get('_interval')
             timeout = 0.8 * interval
             if asset.name != asset_name:
-                # asset_id and check_name are truly immutable, name is not
-                asset = Asset(asset_id, asset_name, check_name)
+                # asset_id and check_key are truly immutable, name is not
+                asset = Asset(asset_id, asset_name, check_key)
 
             logging.debug(f'run check; {asset}')
 
