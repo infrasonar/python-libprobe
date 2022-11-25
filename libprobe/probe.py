@@ -359,10 +359,6 @@ class Probe:
                 logging.warning(
                     'incomplete result; '
                     f'{asset} error: `{e}` severity: {e.severity}')
-                logging.error(path)
-                logging.error(e.result)
-                logging.error(e.to_dict())
-                logging.error(ts)
                 self.send(path, e.result, e.to_dict(), ts)
 
             except CheckException as e:
