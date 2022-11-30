@@ -222,6 +222,13 @@ class Probe:
         else:
             config = {}
 
+        for probe in config.values():
+            if 'use' in probe:
+                for section in ('assets', 'config'):
+                    if section in probe:
+                        logging.warning(
+                            f'both `{section}` and `use` in probe section')
+
         self._local_config_mtime = self._config_path.stat().st_mtime
         self._local_config = config
 

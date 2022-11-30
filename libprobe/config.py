@@ -50,6 +50,10 @@ def get_config(conf: dict, probe_name: str, asset_id):
     if not isinstance(probe, dict):
         return {}
 
+    use = probe.get('use')
+    if isinstance(use, str):
+        return get_config(conf, use, asset_id)
+
     assets = probe.get('assets')
     if assets:
         for asset in assets:

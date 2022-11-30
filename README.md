@@ -116,4 +116,7 @@ exampleProbe:
       config:
         username: charlie
         password: "my other secret"
+otherProbe:
+  use: exampleProbe  # use the exampleProbe config for this probe
 ```
+
