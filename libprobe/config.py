@@ -8,10 +8,14 @@ exampleProbe:
     username: alice
     password: secret_password
   assets:
-    - id: 12345
+    - id: 123
       config:
         username: bob
         password: "my secret"
+    - id: [456, 789]
+      config:
+        username: charlie
+        password: "my other secret"
 """
 
 
@@ -49,7 +53,12 @@ def get_config(conf: dict, probe_name: str, asset_id):
     assets = probe.get('assets')
     if assets:
         for asset in assets:
-            if isinstance(asset, dict) and asset.get('id') == asset_id:
+            if not isinstance(asset, dict):
+                continue
+            # id can be either a single id or a list of ids
+            _asset_id = asset.get('id')
+            if _asset_id == asset_id or \
+                    (isinstance(_asset_id, list) and asset_id in _asset_id):
                 config = asset.get('config')
                 return config if isinstance(config, dict) else {}
 

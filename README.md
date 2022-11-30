@@ -92,3 +92,28 @@ if __name__ == "__main__":
     # Start the probe
     probe.start()
 ```
+
+
+## Config
+
+When using a `password` or `secret` within a _config_ section, the library
+will encrypt the value so it will be unreadable by users. This must not be
+regarded as true encryption as the encryption key is publicly available.
+
+Example yaml configuration:
+
+```yaml
+exampleProbe:
+  config:
+    username: alice
+    password: secret_password
+  assets:
+    - id: 123
+      config:
+        username: bob
+        password: "my secret"
+    - id: [456, 789]
+      config:
+        username: charlie
+        password: "my other secret"
+```

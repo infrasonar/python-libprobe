@@ -25,7 +25,7 @@ from .config import encrypt, decrypt, get_config
 HEADER_FILE = """
 # WARNING: InfraSonar will make `password` and `secret` values unreadable but
 # this must not be regarded as true encryption as the encryption key is
-# publically available.
+# publicly available.
 #
 # Example configuration for `myprobe` collector:
 #
