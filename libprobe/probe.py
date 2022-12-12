@@ -210,12 +210,13 @@ class Probe:
 
         if config:
             # First encrypt everything
-            encrypt(config, FERNET)
+            changed = encrypt(config, FERNET)
 
             # Re-write the file
-            with open(self._config_path, 'w') as file:
-                file.write(HEADER_FILE)
-                file.write(yaml.dump(config))
+            if changed:
+                with open(self._config_path, 'w') as file:
+                    file.write(HEADER_FILE)
+                    file.write(yaml.dump(config))
 
             # Now decrypt everything so we can use the configuration
             decrypt(config, FERNET)

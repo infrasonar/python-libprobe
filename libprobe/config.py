@@ -19,16 +19,19 @@ exampleProbe:
 """
 
 
-def encrypt(layer, fernet):
+def encrypt(layer, fernet) -> bool:
+    changed = False
     for k, v in layer.items():
         if k in ('secret', 'password') and isinstance(v, str):
             layer[k] = {"encrypted": fernet.encrypt(str.encode(v))}
+            changed = True
         elif isinstance(v, (list, tuple)):
             for item in v:
                 if isinstance(item, dict):
-                    encrypt(item, fernet)
+                    changed = encrypt(item, fernet) or changed
         elif isinstance(v, dict):
-            encrypt(v, fernet)
+            changed = encrypt(v, fernet) or changed
+    return changed
 
 
 def decrypt(layer, fernet):
