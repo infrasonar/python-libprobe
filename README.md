@@ -108,14 +108,14 @@ exampleProbe:
     username: alice
     password: secret_password
   assets:
-    - id: 123
-      config:
-        username: bob
-        password: "my secret"
-    - id: [456, 789]
-      config:
-        username: charlie
-        password: "my other secret"
+  - id: 123
+    config:
+      username: bob
+      password: "my secret"
+  - id: [456, 789]
+    config:
+      username: charlie
+      password: "my other secret"
 otherProbe:
   use: exampleProbe  # use the exampleProbe config for this probe
 ```

@@ -34,10 +34,10 @@ HEADER_FILE = """
 #      username: alice
 #      password: "secret password"
 #    assets:
-#      - id: 12345
-#        config:
-#          username: bob
-#          password: "my secret"
+#    - id: 12345
+#      config:
+#        username: bob
+#        password: "my secret"
 """.lstrip()
 
 AGENTCORE_HOST = os.getenv('AGENTCORE_HOST', '127.0.0.1')
