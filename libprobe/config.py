@@ -18,6 +18,7 @@ exampleProbe:
         password: "my other secret"
 """
 from typing import Optional
+import logging
 
 
 def encrypt(layer, fernet) -> bool:
@@ -50,13 +51,15 @@ def decrypt(layer, fernet):
 
 
 def get_config(conf: dict, probe_name: str, asset_id: int, use: Optional[str]):
-    probe = conf.get(probe_name)
-    if use:
-        # use might both be None or an empty string, depending if the _use
-        # option is available for the probe; both must be ignored
-        probe = conf.get(use, probe)
+    # use might both be None or an empty string, depending if the `_use` option
+    # is available for the probe; both must be ignored
+    probe = conf.get(use or probe_name)
 
     if not isinstance(probe, dict):
+        if use:
+            logging.warning(
+                f'probe config `{use}` is '
+                'explicitly configured but is not found')
         return {}
 
     use = probe.get('use')
