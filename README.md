@@ -12,6 +12,7 @@ Variable          | Default                        | Description
 `AGENTCORE_HOST`  | `127.0.0.1`                    | Hostname or Ip address of the AgentCore.
 `AGENTCORE_PORT`  | `8750`                         | AgentCore port to connect to.
 `INFRASONAR_CONF` | `/data/config/infrasonar.yaml` | File with probe and asset configuration like credentials.
+`MAX_PACKAGE_SIZE`| `500`                          | Maximum package size in kilobytes _(1..2000)_.
 `LOG_LEVEL`       | `warning`                      | Log level (`debug`, `info`, `warning`, `error` or `critical`).
 `LOG_COLORIZED`   | `0`                            | Log using colors (`0`=disabled, `1`=enabled).
 `LOG_FTM`         | `%y%m%d %H:%M:%S`              | Log format prefix.

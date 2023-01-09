@@ -17,6 +17,7 @@ exampleProbe:
         username: charlie
         password: "my other secret"
 """
+from typing import Optional
 
 
 def encrypt(layer, fernet) -> bool:
@@ -48,14 +49,17 @@ def decrypt(layer, fernet):
             decrypt(v, fernet)
 
 
-def get_config(conf: dict, probe_name: str, asset_id):
+def get_config(conf: dict, probe_name: str, asset_id: int, use: Optional[str]):
     probe = conf.get(probe_name)
+    if isinstance(use, str):
+        probe = conf.get(use, probe)
+
     if not isinstance(probe, dict):
         return {}
 
     use = probe.get('use')
     if isinstance(use, str):
-        return get_config(conf, use, asset_id)
+        return get_config(conf, use, asset_id, None)
 
     assets = probe.get('assets')
     if assets:

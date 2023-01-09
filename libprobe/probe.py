@@ -56,6 +56,12 @@ ASSET_NAME_IDX, CHECK_NAME_IDX = range(2)
 # from reading a passwords directly from open configuration files.
 FERNET = Fernet(b"4DFfx9LZBPvwvCpwmsVGT_HzjgiGUHduP1kq_L2Fbjw=")
 
+MAX_PACKAGE_SIZE = int(os.getenv('MAX_PACKAGE_SIZE', 500))
+if 1 > MAX_PACKAGE_SIZE > 2000:
+    sys.exit('Value for MAX_PACKAGE_SIZE must be between 1 and 2000')
+
+MAX_PACKAGE_SIZE *= 1000
+
 
 class Probe:
     """This class should only be initialized once."""
@@ -193,8 +199,13 @@ class Probe:
             data=[path, check_data]
         )
 
-        if self._protocol and self._protocol.transport:
-            self._protocol.transport.write(pkg.to_bytes())
+        data = pkg.to_bytes()
+        if len(data) > MAX_PACKAGE_SIZE:
+            e = CheckException(f'data package too large ({len(data)} bytes)')
+            logging.error(f'check error; asset_id `{asset_id}`; {str(e)}')
+            self.send(path, None, e.to_dict(), ts)
+        elif self._protocol and self._protocol.transport:
+            self._protocol.transport.write(data)
 
     def close(self):
         if self._protocol and self._protocol.transport:
@@ -233,13 +244,13 @@ class Probe:
         self._local_config_mtime = self._config_path.stat().st_mtime
         self._local_config = config
 
-    def _asset_config(self, asset_id: int) -> dict:
+    def _asset_config(self, asset_id: int, use: Optional[str]) -> dict:
         try:
             self._read_local_config()
         except Exception:
             logging.warning('new config file invalid, keep using previous')
 
-        return get_config(self._local_config, self.name, asset_id)
+        return get_config(self._local_config, self.name, asset_id, use)
 
     def _on_unset_assets(self, asset_ids: list):
         asset_ids = set(asset_ids)
@@ -319,13 +330,14 @@ class Probe:
                 break
             ts = ts_next
 
-            asset_config = self._asset_config(asset.id)
             (asset_name, _), config = self._checks_config[path]
             interval = config.get('_interval')
             timeout = 0.8 * interval
             if asset.name != asset_name:
                 # asset_id and check_key are truly immutable, name is not
                 asset = Asset(asset_id, asset_name, check_key)
+
+            asset_config = self._asset_config(asset.id, config.get('_use'))
 
             logging.debug(f'run check; {asset}')
 
