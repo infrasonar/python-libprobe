@@ -314,7 +314,7 @@ class Probe:
         assert isinstance(interval, int) and interval > 0
 
         ts = time.time()
-        ts_next = (ts + random.random() * interval) + 1.0
+        ts_next = (ts + random.random() * interval) + 60.0
 
         while True:
             if ts > ts_next:
