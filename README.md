@@ -141,4 +141,4 @@ Run the probe with the `DRY_RUN` environment variable set the the yaml file abov
 DRY_RUN=test.yaml python main.py
 ```
 
-> Note: Optionally an asset _id_ might be given which can by used to find asset configuration in the local asset configuration file. The asset _config_ is also optional.
+> Note: Optionally an asset _id_ might be given which can by used to find asset configuration in the local asset configuration file. Asset _config_ is also optional.
