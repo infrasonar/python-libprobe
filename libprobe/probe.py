@@ -279,9 +279,9 @@ class Probe:
             }
         }
         output = json.dumps(response, indent=2)
-        print('-'*80)
+        print('-'*80, file=sys.stderr)
         print(output)
-        print('')
+        print('', file=sys.stderr)
 
     async def _connect(self):
         conn = self.loop.create_connection(
