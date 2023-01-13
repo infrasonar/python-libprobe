@@ -95,7 +95,8 @@ class Probe:
     ):
         setproctitle(name)
         setup_logger()
-        logging.warning(f'starting probe collector: {name} v{version}')
+        start_msg = 'starting' if dry_run is None else 'dry-run'
+        logging.warning(f'{start_msg} probe collector: {name} v{version}')
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.name: str = name
         self.version: str = version
