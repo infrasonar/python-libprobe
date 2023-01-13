@@ -5,6 +5,8 @@ import random
 import signal
 import time
 import yaml
+import sys
+import json
 from cryptography.fernet import Fernet
 from pathlib import Path
 from setproctitle import setproctitle
@@ -44,6 +46,8 @@ AGENTCORE_HOST = os.getenv('AGENTCORE_HOST', '127.0.0.1')
 AGENTCORE_PORT = int(os.getenv('AGENTCORE_PORT', 8750))
 INFRASONAR_CONF_FN = \
     os.getenv('INFRASONAR_CONF', '/data/config/infrasonar.yaml')
+MAX_CHECK_TIMEOUT = float(os.getenv('MAX_CHECK_TIMEOUT', 300))
+DRY_RUN = os.getenv('DRY_RUN', '')
 
 # Index in path
 ASSET_ID, CHECK_ID = range(2)
@@ -61,6 +65,22 @@ if 1 > MAX_PACKAGE_SIZE > 2000:
     sys.exit('Value for MAX_PACKAGE_SIZE must be between 1 and 2000')
 
 MAX_PACKAGE_SIZE *= 1000
+
+EDR = """
+asset:
+  name: "foo.local"
+  check: "wmi"
+  config:
+    address: "192.168.1.2"
+"""
+
+dry_run = None
+
+if DRY_RUN:
+    with open(DRY_RUN, "r") as fp:
+        dry_run = yaml.safe_load(fp)
+    if not isinstance(dry_run, dict):
+        sys.exit(f'Invalid yaml file {DRY_RUN}; example: {EDR}')
 
 
 class Probe:
@@ -93,14 +113,16 @@ class Probe:
             Tuple[int, int],
             Tuple[Tuple[str, str], dict]] = {}
         self._checks: Dict[Tuple[int, int], asyncio.Future] = {}
+        self._dry_run: Optional[Tuple[Asset, dict]] = \
+            None if dry_run is None else self._load_dry_run_assst(dry_run)
 
         if not os.path.exists(config_path):
             try:
                 parent = os.path.dirname(config_path)
                 if not os.path.exists(parent):
                     os.mkdir(parent)
-                with open(self._config_path, 'w') as file:
-                    file.write(HEADER_FILE)
+                with open(self._config_path, 'w') as fp:
+                    fp.write(HEADER_FILE)
             except Exception:
                 logging.exception(f"cannot write file: {config_path}")
                 exit(1)
@@ -110,6 +132,48 @@ class Probe:
         except Exception:
             logging.exception(f"configuration file invalid: {config_path}")
             exit(1)
+
+    def _load_dry_run_assst(self, dry_run: dict) -> Tuple[Asset, dict]:
+        asset = dry_run.get('asset')
+
+        if not isinstance(asset, dict):
+            logging.error(
+                f'Missing or invalid `asset` in {DRY_RUN}; example: {EDR}')
+            exit(1)
+
+        asset_name = asset.get('name')
+        if not isinstance(asset_name, str):
+            logging.error(
+                f'Missing or invalid `name` in {DRY_RUN}; example: {EDR}')
+            exit(1)
+
+        asset_id = asset.get('id', 0)
+        if not isinstance(asset_id, int):
+            logging.error(
+                f'Invalid optional `id` in {DRY_RUN}; '
+                'Asset id must be type int')
+            exit(1)
+
+        check_key = asset.get('check')
+        if not isinstance(check_key, str):
+            logging.error(
+                f'Missing or invalid `check` in {DRY_RUN}; example: {EDR}')
+            exit(1)
+
+        if check_key not in self._checks_funs:
+            available = ', '.join(self._checks_funs.keys())
+            logging.error(
+                f'Unknown check `{check_key}` in {DRY_RUN}; '
+                f'Available checks: {available}')
+            exit(1)
+
+        config = asset.get('config', {}) or {}
+        if not isinstance(config, dict):
+            logging.error(
+                f'Invalid `config` in {DRY_RUN}; example: {EDR}')
+            exit(1)
+
+        return Asset(asset_id, asset_name, check_key), config
 
     def is_connected(self) -> bool:
         return self._protocol is not None and self._protocol.is_connected()
@@ -142,11 +206,81 @@ class Probe:
         signal.signal(signal.SIGTERM, self._stop)
 
         self.loop = asyncio.get_event_loop()
+        if self._dry_run is None:
+            try:
+                self.loop.run_until_complete(self._start())
+            except asyncio.exceptions.CancelledError:
+                self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+                self.loop.close()
+        else:
+            self.loop.run_until_complete(self._do_dry_run())
+
+    async def _do_dry_run(self):
+        asset, config = self._dry_run
+        timeout = MAX_CHECK_TIMEOUT
+        asset_config = self._asset_config(asset.id, config.get('_use'))
+        fun = self._checks_funs[asset.check]
+        ts = time.time()
+
+        logging.debug(f'run check (dry-run); {asset}')
+        success, failed = None, None
+
         try:
-            self.loop.run_until_complete(self._start())
-        except asyncio.exceptions.CancelledError:
-            self.loop.run_until_complete(self.loop.shutdown_asyncgens())
-            self.loop.close()
+            try:
+                res = await asyncio.wait_for(
+                    fun(asset, asset_config, config), timeout=timeout)
+                if not isinstance(res, dict):
+                    raise TypeError(
+                        'expecting type `dict` as check result '
+                        f'but got type `{type(res).__name__}`')
+            except asyncio.TimeoutError:
+                raise CheckException('timed out')
+            except asyncio.CancelledError:
+                raise CheckException('cancelled')
+            except (IgnoreCheckException,
+                    IgnoreResultException,
+                    CheckException):
+                raise
+            except Exception as e:
+                # fall-back to exception class name
+                error_msg = str(e) or type(e).__name__
+                raise CheckException(error_msg)
+
+        except IgnoreResultException:
+            logging.info(f'ignore result; {asset}')
+
+        except IgnoreCheckException:
+            # log as warning; the user is able to prevent this warning by
+            # disabling the check if not relevant for the asset;
+            logging.warning(f'ignore check; {asset}')
+
+        except IncompleteResultException as e:
+            logging.warning(
+                'incomplete result; '
+                f'{asset} error: `{e}` severity: {e.severity}')
+            success, failed = e.result, e.to_dict()
+
+        except CheckException as e:
+            logging.error(
+                'check error; '
+                f'{asset} error: `{e}` severity: {e.severity}')
+            success, failed = None, e.to_dict()
+        else:
+            logging.debug(f'run check ok; {asset}')
+            success, failed = res, None
+
+        response = {
+            'result': success,
+            'error': failed,
+            'framework': {
+                'duration': time.time() - ts,
+                'timestamp': int(ts),
+            }
+        }
+        output = json.dumps(response, indent=2)
+        print('-'*80)
+        print(output)
+        print('')
 
     async def _connect(self):
         conn = self.loop.create_connection(
@@ -216,8 +350,8 @@ class Probe:
         if self._config_path.stat().st_mtime == self._local_config_mtime:
             return
 
-        with open(self._config_path, 'r') as file:
-            config = yaml.safe_load(file)
+        with open(self._config_path, 'r') as fp:
+            config = yaml.safe_load(fp)
 
         if config:
             # First encrypt everything
@@ -225,9 +359,9 @@ class Probe:
 
             # Re-write the file
             if changed:
-                with open(self._config_path, 'w') as file:
-                    file.write(HEADER_FILE)
-                    file.write(yaml.dump(config))
+                with open(self._config_path, 'w') as fp:
+                    fp.write(HEADER_FILE)
+                    fp.write(yaml.dump(config))
 
             # Now decrypt everything so we can use the configuration
             decrypt(config, FERNET)
@@ -332,7 +466,7 @@ class Probe:
 
             (asset_name, _), config = self._checks_config[path]
             interval = config.get('_interval')
-            timeout = 0.8 * interval
+            timeout = min(0.8 * interval, MAX_CHECK_TIMEOUT)
             if asset.name != asset_name:
                 # asset_id and check_key are truly immutable, name is not
                 asset = Asset(asset_id, asset_name, check_key)
