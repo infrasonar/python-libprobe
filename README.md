@@ -142,3 +142,9 @@ DRY_RUN=test.yaml python main.py
 ```
 
 > Note: Optionally an asset _id_ might be given which can by used to find asset configuration in the local asset configuration file. Asset _config_ is also optional.
+
+### Dump to JSON
+A dry run writes all log to _stderr_ and only the JSON dump is written to _stdout_. Therefore, writing the output to JSON is easy:
+```
+DRY_RUN=test.yaml python main.py > dump.json
+```
