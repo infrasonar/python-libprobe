@@ -19,10 +19,9 @@ Variable            | Default                        | Description
 `LOG_COLORIZED`     | `0`                            | Log using colors (`0`=disabled, `1`=enabled).
 `LOG_FTM`           | `%y%m%d %H:%M:%S`              | Log format prefix.
 
-
 ## Usage
 
-Building an InfraSonar.
+Building an InfraSonar.get_state
 
 ```python
 import logging
@@ -96,6 +95,14 @@ if __name__ == "__main__":
     probe.start()
 ```
 
+## ASCII item names
+
+InfraSonar requires each item to have a unique _name_ property. The value for _name_ must be a _string_ with ASCII compatible character.
+When your _name_ is not guaranteed to be ASCII compatible, the following code replaces the incompatible characters with question marks (`?`):
+
+```python
+name = name.encode('ascii', errors='replace').decode()
+```
 
 ## Config
 
@@ -142,3 +149,4 @@ DRY_RUN=test.yaml python main.py
 ```
 
 > Note: Optionally an asset _id_ might be given which can by used to find asset configuration in the local asset configuration file. Asset _config_ is also optional.
+
