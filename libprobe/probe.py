@@ -439,6 +439,10 @@ class Probe:
     @staticmethod
     def _next_ts(asset_id: int, check_id: int, interval: int,
                  ts: float) -> float:
+        """Return a timestamp for the next run for a check on the given asset.
+        It calculates a value between the range 0..interval based on both the
+        asset and check and adds a value between 0..1 based on just the asset.
+        """
         w = ((asset_id + check_id) % interval) - (ts % interval)
         return \
             ts + (w if w >= 0 else (w + interval)) + (asset_id % 32 * 0.03125)
