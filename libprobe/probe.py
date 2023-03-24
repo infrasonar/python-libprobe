@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import random
 import signal
 import time
 import yaml
@@ -437,37 +436,62 @@ class Probe:
                 self._run_check_loop(path)
             )
 
+    @staticmethod
+    def _next_ts(asset_id: int, check_id: int, interval: int,
+                 ts: float) -> float:
+        w = ((asset_id + check_id) % interval) - (ts % interval)
+        return \
+            ts + (w if w >= 0 else (w + interval)) + (asset_id % 32 * 0.03125)
+
     async def _run_check_loop(self, path: tuple):
-        asset_id, _ = path
+        asset_id, check_id = path
         (asset_name, check_key), config = self._checks_config[path]
         interval = config.get('_interval')
         fun = self._checks_funs[check_key]
         asset = Asset(asset_id, asset_name, check_key)
 
         my_task = self._checks[path]
-
         assert isinstance(interval, int) and interval > 0
 
-        ts = time.time()
-        ts_next = (ts + random.random() * interval) + 60.0
-
         while True:
-            if ts > ts_next:
-                # This can happen when a computer clock has been changed
-                logging.error('scheduled timestamp in the past; '
-                              'maybe the computer clock has been changed?')
-                ts_next = ts
+            ts = self._next_ts(asset_id, check_id, interval, time.time())
 
             try:
-                await asyncio.sleep(ts_next - ts)
+                while True:
+                    wait = ts - time.time()
+                    if wait < 0.0:
+                        # very small negative values are possible when the
+                        # previous wait was very close to 10.0 seconds.
+                        # We only need to log if the time difference is
+                        # serious off schedule.
+                        if wait < -2.5:
+                            logging.error(
+                                'scheduled timestamp in the past; '
+                                'maybe the computer clock has been changed '
+                                'or the event loop had a blocking task;')
+                        break
+
+                    w = min(wait, 10.0)
+                    await asyncio.sleep(w)
+
+                    (asset_name, _), config = self._checks_config[path]
+                    i = config.get('_interval')
+
+                    if w == wait:
+                        break
+
+                    if i != interval:
+                        # calculate new interval; this is helpful when we
+                        # change from a large interval to a short interval;
+                        ts = self._next_ts(asset_id, check_id, i, time.time())
+                        interval = i
+
             except asyncio.CancelledError:
                 logging.info(f'cancelled; {asset}')
                 break
-            ts = ts_next
 
-            (asset_name, _), config = self._checks_config[path]
-            interval = config.get('_interval')
             timeout = min(0.8 * interval, MAX_CHECK_TIMEOUT)
+
             if asset.name != asset_name:
                 # asset_id and check_key are truly immutable, name is not
                 asset = Asset(asset_id, asset_name, check_key)
@@ -526,5 +550,3 @@ class Probe:
                 logging.debug(f'run check ok; {asset}')
                 self.send(path, res, None, ts)
 
-            ts = time.time()
-            ts_next += interval
