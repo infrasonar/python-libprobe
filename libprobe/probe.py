@@ -549,4 +549,3 @@ class Probe:
             else:
                 logging.debug(f'run check ok; {asset}')
                 self.send(path, res, None, ts)
-
