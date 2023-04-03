@@ -57,7 +57,9 @@ ASSET_NAME_IDX, CHECK_NAME_IDX = range(2)
 # This is the InfraSonar encryption key used for local configuration files.
 # Note that this is not intended as a real security measure but prevents users
 # from reading a passwords directly from open configuration files.
-FERNET = Fernet(b"4DFfx9LZBPvwvCpwmsVGT_HzjgiGUHduP1kq_L2Fbjw=")
+FERNET = Fernet(bytes(os.getenv(
+    'ENCRYPTION_KEY',
+    '4DFfx9LZBPvwvCpwmsVGT_HzjgiGUHduP1kq_L2Fbjw='), encoding='utf-8'))
 
 MAX_PACKAGE_SIZE = int(os.getenv('MAX_PACKAGE_SIZE', 500))
 if 1 > MAX_PACKAGE_SIZE > 2000:

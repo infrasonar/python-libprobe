@@ -11,6 +11,7 @@ Variable            | Default                        | Description
 ------------------- | ------------------------------ | ------------
 `AGENTCORE_HOST`    | `127.0.0.1`                    | Hostname or Ip address of the AgentCore.
 `AGENTCORE_PORT`    | `8750`                         | AgentCore port to connect to.
+`ENCRYPTION_KEY`    | _default_                      | Use your own encryption key for encrypting secrets in the YAML file.
 `INFRASONAR_CONF`   | `/data/config/infrasonar.yaml` | File with probe and asset configuration like credentials.
 `MAX_PACKAGE_SIZE`  | `500`                          | Maximum package size in kilobytes _(1..2000)_.
 `MAX_CHECK_TIMEOUT` | `300`                          | Check time-out is 80% of the interval time with `MAX_CHECK_TIMEOUT` in seconds as absolute maximum.
