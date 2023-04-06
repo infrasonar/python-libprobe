@@ -34,6 +34,7 @@ from libprobe.exceptions import (
     IgnoreResultException,
     IgnoreCheckException,
     IncompleteResultException,
+    NoCountException,
 )
 
 __version__ = "0.1.0"
@@ -76,6 +77,14 @@ async def my_first_check(asset: Asset, asset_config: dict, check_config: dict):
         # optionally, IncompleteResultException can be given another severity;
         # the default severity is LOW.
         raise IncompleteResultException('missing type x', result)
+
+    if "not_count_as_check_result":
+        # optionally, NoCountException can be raised in which case the check
+        # result is not counted by InfraSonar; Thus, the last seen services
+        # will not "see" this check result.
+        # A severity can be given if we also want a check error; (similar to
+        # the IncompleteResultException exception)
+        raise NoCountException('do not count this check result', result)
 
     # Use the asset in logging; this will include asset info and the check key
     logging.info(f"log something; {asset}")

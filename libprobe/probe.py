@@ -15,6 +15,7 @@ from .exceptions import (
     IgnoreResultException,
     IgnoreCheckException,
     IncompleteResultException,
+    NoCountException,
 )
 from .logger import setup_logger
 from .net.package import Package
@@ -225,7 +226,7 @@ class Probe:
         ts = time.time()
 
         logging.debug(f'run check (dry-run); {asset}')
-        success, failed = None, None
+        success, failed, no_count = None, None, False
 
         try:
             try:
@@ -262,6 +263,17 @@ class Probe:
                 f'{asset} error: `{e}` severity: {e.severity}')
             success, failed = e.result, e.to_dict()
 
+        except NoCountException as e:
+            no_count = True
+            if e.severity is None:
+                logging.debug(f'run check ok ({e}); {asset}')
+                success, failed = e.result, None
+            else:
+                logging.warning(
+                    'incomplete no count result; ',
+                    f'{asset} error: `{e}` severity: {e.severity}')
+                success, failed = e.result, e.to_dict()
+
         except CheckException as e:
             logging.error(
                 'check error; '
@@ -271,13 +283,17 @@ class Probe:
             logging.debug(f'run check ok; {asset}')
             success, failed = res, None
 
+        framework = {
+            'duration': time.time() - ts,
+            'timestamp': int(ts),
+        }
+        if no_count:
+            framework['no_count'] = True
+
         response = {
             'result': success,
             'error': failed,
-            'framework': {
-                'duration': time.time() - ts,
-                'timestamp': int(ts),
-            }
+            'framework': framework
         }
         output = json.dumps(response, indent=2)
         print('-'*80, file=sys.stderr)
@@ -319,15 +335,20 @@ class Probe:
             path: tuple,
             result: Optional[dict],
             error: Optional[dict],
-            ts: float):
+            ts: float,
+            no_count: bool = False):
         asset_id, _ = path
+        framework = {
+            'duration': time.time() - ts,
+            'timestamp': int(ts),
+        }
+        if no_count:
+            framework['no_count'] = True
+
         check_data = {
             'result': result,
             'error': error,
-            'framework': {
-                'duration': time.time() - ts,
-                'timestamp': int(ts),
-            }
+            'framework': framework
         }
         pkg = Package.make(
             AgentcoreProtocol.PROTO_FAF_DUMP,
@@ -545,6 +566,16 @@ class Probe:
                     'incomplete result; '
                     f'{asset} error: `{e}` severity: {e.severity}')
                 self.send(path, e.result, e.to_dict(), ts)
+
+            except NoCountException as e:
+                if e.severity is None:
+                    logging.debug(f'run check ok ({e}); {asset}')
+                    self.send(path, e.result, None, ts, no_count=True)
+                else:
+                    logging.warning(
+                        'incomplete result (no count); ',
+                        f'{asset} error: `{e}` severity: {e.severity}')
+                    self.send(path, e.result, e.to_dict(), ts, no_count=True)
 
             except CheckException as e:
                 logging.error(

@@ -1,4 +1,5 @@
 from .severity import Severity
+from typing import Optional
 
 
 class IgnoreResultException(Exception):
@@ -46,6 +47,22 @@ class IncompleteResultException(CheckException):
             msg: str,
             result: dict,
             severity: Severity = Severity.MEDIUM):
+        assert isinstance(result, dict)
+        super().__init__(msg, severity=severity)
+        self.result = result
+
+
+class NoCountException(CheckException):
+    """NoCountException must be raised when you do not want InfraSonar to
+    count this check result. When a check result is not count, it will not seen
+    by the last seen service. Conditions and time series data will be processed
+    as usual.
+    """
+    def __init__(
+            self,
+            msg: str,
+            result: dict,
+            severity: Optional[Severity] = None):
         assert isinstance(result, dict)
         super().__init__(msg, severity=severity)
         self.result = result
