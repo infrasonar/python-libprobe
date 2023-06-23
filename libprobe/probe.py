@@ -382,9 +382,12 @@ class Probe:
 
             # Re-write the file
             if changed:
-                with open(self._config_path, 'w') as fp:
-                    fp.write(HEADER_FILE)
-                    fp.write(yaml.dump(config))
+                try:
+                    with open(self._config_path, 'w') as fp:
+                        fp.write(HEADER_FILE)
+                        fp.write(yaml.dump(config))
+                except OSError:
+                    logging.warning(f"failed to write `{self._config_path}`")
 
             # Now decrypt everything so we can use the configuration
             decrypt(config, FERNET)
