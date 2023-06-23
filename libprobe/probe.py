@@ -387,6 +387,9 @@ class Probe:
                         fp.write(HEADER_FILE)
                         fp.write(yaml.dump(config))
                 except OSError:
+                    # This can happen when for example a read-only ConfigMap
+                    # is used in Kubernetes. In this case we do not want to
+                    # crash when we cannot write the file to disk.
                     logging.warning(f"failed to write `{self._config_path}`")
 
             # Now decrypt everything so we can use the configuration
