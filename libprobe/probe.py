@@ -497,11 +497,12 @@ class Probe:
                         # previous wait was very close to 10.0 seconds.
                         # We only need to log if the time difference is
                         # serious off schedule.
-                        if wait < -2.5:
+                        if wait < -4.0:
                             logging.error(
                                 'scheduled timestamp in the past; '
                                 'maybe the computer clock has been changed '
-                                'or the event loop had a blocking task;')
+                                'or the event loop had a blocking task; '
+                                f'(off by {wait:.1f} seconds)')
                         break
 
                     w = min(wait, 10.0)
