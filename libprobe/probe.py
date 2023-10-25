@@ -48,6 +48,7 @@ INFRASONAR_CONF_FN = \
     os.getenv('INFRASONAR_CONF', '/data/config/infrasonar.yaml')
 MAX_CHECK_TIMEOUT = float(os.getenv('MAX_CHECK_TIMEOUT', 300))
 DRY_RUN = os.getenv('DRY_RUN', '')
+OUTPUT_TYPE = os.getenv('OUTPUT_TYPE', 'JSON').upper()
 
 # Index in path
 ASSET_ID, CHECK_ID = range(2)
@@ -83,6 +84,8 @@ if DRY_RUN:
         dry_run = yaml.safe_load(fp)
     if not isinstance(dry_run, dict):
         sys.exit(f'Invalid yaml file {DRY_RUN}; example: {EDR}')
+    assert OUTPUT_TYPE in ('JSON', 'PPRINT'), \
+        f'Invalid output type `{OUTPUT_TYPE}`; Must be JSON or PPRINT'
 
 
 class Probe:
@@ -295,9 +298,14 @@ class Probe:
             'error': failed,
             'framework': framework
         }
-        output = json.dumps(response, indent=2)
+
         print('-'*80, file=sys.stderr)
-        print(output)
+        if OUTPUT_TYPE == 'PPRINT':
+            import pprint
+            pprint.pprint(response, indent=2)
+        else:
+            output = json.dumps(response, indent=2)
+            print(output)
         print('', file=sys.stderr)
 
     async def _connect(self):
