@@ -607,12 +607,12 @@ class Probe:
                 self.send(path, e.result, e.to_dict(), ts)
 
             except NoCountException as e:
-                if e.severity is None:
+                if not e.is_exception:
                     logging.debug(f'run check ok ({e}); {asset}')
                     self.send(path, e.result, None, ts, no_count=True)
                 else:
                     logging.warning(
-                        'incomplete result (no count); ',
+                        'incomplete result (no count); '
                         f'{asset} error: `{e}` severity: {e.severity}')
                     self.send(path, e.result, e.to_dict(), ts, no_count=True)
 
