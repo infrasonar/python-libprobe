@@ -213,7 +213,7 @@ class Probe:
 
         while True:
             if not self.is_connected() and not self.is_connecting():
-                asyncio.ensure_future(self._connect())
+                asyncio.ensure_future(self._connect(), loop=self.loop)
                 step = min(step * 2, max_step)
             else:
                 step = initial_step
@@ -243,7 +243,7 @@ class Probe:
             self.loop.run_until_complete(self._do_dry_run())
 
     async def _do_dry_run(self):
-        assert self._dry_run
+        assert self._dry_run is not None
         asset, config = self._dry_run
         timeout = MAX_CHECK_TIMEOUT
         asset_config = self._asset_config(asset.id, config.get('_use'))
@@ -331,7 +331,7 @@ class Probe:
         print('', file=sys.stderr)
 
     async def _connect(self):
-        assert self.loop
+        assert self.loop is not None
         conn = self.loop.create_connection(
             lambda: AgentcoreProtocol(
                 self._on_set_assets,
@@ -444,7 +444,7 @@ class Probe:
         except Exception:
             logging.warning('new config file invalid, keep using previous')
 
-        assert self._local_config
+        assert self._local_config is not None
         return get_config(self._local_config, self.name, asset_id, use)
 
     def _on_unset_assets(self, asset_ids: list):
