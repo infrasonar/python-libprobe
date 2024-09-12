@@ -295,7 +295,7 @@ class Probe:
                 success, failed = e.result, None
             else:
                 logging.warning(
-                    'incomplete no count result; ',
+                    'incomplete no count result; '
                     f'{asset} error: `{e}` severity: {e.severity}')
                 success, failed = e.result, e.to_dict()
 
