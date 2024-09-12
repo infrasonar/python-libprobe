@@ -268,7 +268,7 @@ class Probe:
 
         except NoCountException as e:
             no_count = True
-            if e.severity is None:
+            if not e.is_exception:
                 logging.debug(f'run check ok ({e}); {asset}')
                 success, failed = e.result, None
             else:
