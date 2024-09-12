@@ -98,6 +98,19 @@ class Probe:
         checks: Dict[str, Callable[[Asset, dict, dict], Awaitable[dict]]],
         config_path: str = INFRASONAR_CONF_FN
     ):
+        """Initialize a Infrasonar probe.
+
+        Args:
+            name: (str):
+                Probe name
+            version: (str):
+                Probe version
+            checks (dictionary):
+                Dictionary of awaitable functions indexed by its (check) name
+            config_path (str):
+                Location of the configuration file. Defaults to
+                `/data/config/infrasonar.yaml`.
+        """
         setproctitle(name)
         setup_logger()
         start_msg = 'starting' if dry_run is None else 'dry-run'
@@ -207,11 +220,19 @@ class Probe:
             for _ in range(step):
                 await asyncio.sleep(1)
 
-    def start(self):
+    def start(self, loop: Optional[asyncio.AbstractEventLoop] = None):
+        """Start a Infrasonar probe
+
+        Args:
+            loop (AbstractEventLoop, optional):
+                Can be used to run the client on a specific event loop.
+                If this argument is not used, a new event loop will be
+                created. Defaults to `None`.
+        """
         signal.signal(signal.SIGINT, self._stop)
         signal.signal(signal.SIGTERM, self._stop)
 
-        self.loop = asyncio.new_event_loop()
+        self.loop = loop if loop else asyncio.new_event_loop()
         if self._dry_run is None:
             try:
                 self.loop.run_until_complete(self._start())
