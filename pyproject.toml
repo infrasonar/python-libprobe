@@ -1,0 +1,9 @@
+[project]
+name = "libprobe"
+
+[tool.pyright]
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+include = [
+    "libprobe"
+]
