@@ -21,8 +21,8 @@ from .logger import setup_logger
 from .net.package import Package
 from .protocol import AgentcoreProtocol
 from .asset import Asset
-from .severity import Severity
 from .config import encrypt, decrypt, get_config
+
 
 HEADER_FILE = """
 # WARNING: InfraSonar will make `password` and `secret` values unreadable but
