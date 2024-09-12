@@ -211,7 +211,7 @@ class Probe:
         signal.signal(signal.SIGINT, self._stop)
         signal.signal(signal.SIGTERM, self._stop)
 
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
         if self._dry_run is None:
             try:
                 self.loop.run_until_complete(self._start())
