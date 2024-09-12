@@ -9,7 +9,7 @@ import json
 from cryptography.fernet import Fernet
 from pathlib import Path
 from setproctitle import setproctitle
-from typing import Optional, Dict, Tuple, Callable, Awaitable
+from typing import Optional, Dict, Tuple, Callable, Awaitable, Mapping
 from .exceptions import (
     CheckException,
     IgnoreResultException,
@@ -95,7 +95,7 @@ class Probe:
         self,
         name: str,
         version: str,
-        checks: Dict[str, Callable[[Asset, dict, dict], Awaitable[dict]]],
+        checks: Mapping[str, Callable[[Asset, dict, dict], Awaitable[dict]]],
         config_path: str = INFRASONAR_CONF_FN
     ):
         """Initialize a Infrasonar probe.
@@ -118,7 +118,7 @@ class Probe:
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.name: str = name
         self.version: str = version
-        self._checks_funs: Dict[
+        self._checks_funs: Mapping[
             str,
             Callable[[Asset, dict, dict], Awaitable[dict]]] = checks
         self._config_path: Path = Path(config_path)
