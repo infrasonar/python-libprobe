@@ -64,5 +64,7 @@ class NoCountException(CheckException):
             result: dict,
             severity: Optional[Severity] = None):
         assert isinstance(result, dict)
-        super().__init__(msg, severity=severity)
+        self.is_exception = severity is not None
+        super().__init__(
+            msg, severity=Severity.LOW if severity is None else severity)
         self.result = result
