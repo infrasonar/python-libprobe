@@ -222,6 +222,7 @@ class Probe:
             self.loop.run_until_complete(self._do_dry_run())
 
     async def _do_dry_run(self):
+        assert self._dry_run
         asset, config = self._dry_run
         timeout = MAX_CHECK_TIMEOUT
         asset_config = self._asset_config(asset.id, config.get('_use'))
@@ -309,6 +310,7 @@ class Probe:
         print('', file=sys.stderr)
 
     async def _connect(self):
+        assert self.loop
         conn = self.loop.create_connection(
             lambda: AgentcoreProtocol(
                 self._on_set_assets,
@@ -421,6 +423,7 @@ class Probe:
         except Exception:
             logging.warning('new config file invalid, keep using previous')
 
+        assert self._local_config
         return get_config(self._local_config, self.name, asset_id, use)
 
     def _on_unset_assets(self, asset_ids: list):

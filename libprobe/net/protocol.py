@@ -53,6 +53,7 @@ class Protocol(asyncio.Protocol):
         future = asyncio.Future()
         self._requests[pkg.pid] = (future, task)
 
+        assert self.transport
         self.transport.write(pkg.to_bytes())
 
         return future

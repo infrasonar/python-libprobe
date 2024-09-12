@@ -55,6 +55,7 @@ class AgentcoreProtocol(Protocol):
             pid=pkg.pid,
             data=time.time()
         )
+        assert self.transport
         self.transport.write(resp_pkg.to_bytes())
 
     def _on_faf_upsert_asset(self, pkg: Package):
