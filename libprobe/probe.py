@@ -9,7 +9,7 @@ import json
 from cryptography.fernet import Fernet
 from pathlib import Path
 from setproctitle import setproctitle
-from typing import Optional, Dict, Tuple, Callable
+from typing import Optional, Dict, Tuple, Callable, Awaitable
 from .exceptions import (
     CheckException,
     IgnoreResultException,
@@ -95,8 +95,8 @@ class Probe:
         self,
         name: str,
         version: str,
-        checks: Dict[str, Callable[[Asset, dict, dict], dict]],
-        config_path: Optional[str] = INFRASONAR_CONF_FN
+        checks: Dict[str, Callable[[Asset, dict, dict], Awaitable[dict]]],
+        config_path: str = INFRASONAR_CONF_FN
     ):
         setproctitle(name)
         setup_logger()
@@ -107,7 +107,7 @@ class Probe:
         self.version: str = version
         self._checks_funs: Dict[
             str,
-            Callable[[Asset, dict, dict], dict]] = checks
+            Callable[[Asset, dict, dict], Awaitable[dict]]] = checks
         self._config_path: Path = Path(config_path)
         self._connecting: bool = False
         self._protocol: Optional[AgentcoreProtocol] = None
@@ -424,11 +424,11 @@ class Probe:
         return get_config(self._local_config, self.name, asset_id, use)
 
     def _on_unset_assets(self, asset_ids: list):
-        asset_ids = set(asset_ids)
+        asset_ids_set = set(asset_ids)
         new_checks_config = {
             path: config
             for path, config in self._checks_config.items()
-            if path[ASSET_ID] not in asset_ids}
+            if path[ASSET_ID] not in asset_ids_set}
         self._set_new_checks_config(new_checks_config)
 
     def _on_upsert_asset(self, asset: list):
@@ -517,7 +517,7 @@ class Probe:
                     await asyncio.sleep(w)
 
                     (asset_name, _), config = self._checks_config[path]
-                    i = config.get('_interval')
+                    i: int = config.get('_interval')  # type: ignore
 
                     if w == wait:
                         break

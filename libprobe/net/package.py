@@ -1,7 +1,7 @@
 from __future__ import annotations
 import msgpack
 import struct
-from typing import Optional
+from typing import Optional, Any
 
 
 class Package(object):
@@ -19,13 +19,13 @@ class Package(object):
         if self.tp != checkbit ^ 255:
             raise ValueError('invalid checkbit')
         self.total = self.__class__.st_package.size + self.length
-        self.data = None
+        self.data: Any = None
 
     @classmethod
     def make(
         cls,
         tp: int,
-        data: bytes = b'',
+        data: Any = b'',
         pid: int = 0,
         partid: int = 0,
         is_binary: bool = False,
