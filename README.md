@@ -91,6 +91,9 @@ async def my_first_check(asset: Asset, asset_config: dict, check_config: dict):
     # Use the asset in logging; this will include asset info and the check key
     logging.info(f"log something; {asset}")
 
+    # In alpha versions and debug logging enabled, unknown exception will be
+    # logged when debug logging is enabled. You may use logger.exception()
+    # yourself if you want exception logging for debug logging only.
     try:
         42 / 0  # ZeroDivision error for example
     except Exception:

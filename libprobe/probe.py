@@ -17,7 +17,7 @@ from .exceptions import (
     IncompleteResultException,
     NoCountException,
 )
-from .logger import setup_logger
+from . import logger
 from .net.package import Package
 from .protocol import AgentcoreProtocol
 from .asset import Asset
@@ -112,7 +112,7 @@ class Probe:
                 `/data/config/infrasonar.yaml`.
         """
         setproctitle(name)
-        setup_logger()
+        logger.setup_logger()
         start_msg = 'starting' if dry_run is None else 'dry-run'
         logging.warning(f'{start_msg} probe collector: {name} v{version}')
         self.loop: Optional[asyncio.AbstractEventLoop] = None
@@ -271,6 +271,10 @@ class Probe:
                 raise
             except Exception as e:
                 # fall-back to exception class name
+                if 'alpha' in self.version:
+                    logger.exception(
+                        'NOTE: exception is visible because this is an '
+                        'alpha version and debug logging is enabled')
                 error_msg = str(e) or type(e).__name__
                 raise CheckException(error_msg)
 
