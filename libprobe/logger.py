@@ -4,6 +4,7 @@ import logging.handlers
 import os
 
 
+_IS_DEBUG = os.getenv('LOG_LEVEL', '').upper() == 'DEBUG'
 _MAP_LOG_LEVELS = {
     'DEBUG': logging.DEBUG,
     'INFO': logging.INFO,
@@ -53,3 +54,9 @@ def setup_logger():
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+
+def exception(msg: str = ''):
+    """Log exception only when debug logging is enabled."""
+    if _IS_DEBUG:
+        logging.exception(msg)
