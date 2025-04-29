@@ -27,6 +27,7 @@ Building an InfraSonar.get_state
 
 ```python
 import logging
+from libprobe import logger
 from libprobe.asset import Asset
 from libprobe.probe import Probe
 from libprobe.severity import Severity
@@ -89,6 +90,11 @@ async def my_first_check(asset: Asset, asset_config: dict, check_config: dict):
 
     # Use the asset in logging; this will include asset info and the check key
     logging.info(f"log something; {asset}")
+
+    try:
+        42 / 0  # ZeroDivision error for example
+    except Exception:
+        logger.exception()  # log the exception only when DEBUG logging
 
     # Return the check result
     return result
