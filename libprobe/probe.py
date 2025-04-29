@@ -592,6 +592,10 @@ class Probe:
                     raise
                 except Exception as e:
                     # fall-back to exception class name
+                    if 'alpha' in self.version:
+                        logger.exception(
+                            'NOTE: exception is visible because this is an '
+                            'alpha version and debug logging is enabled')
                     error_msg = str(e) or type(e).__name__
                     raise CheckException(error_msg)
 
