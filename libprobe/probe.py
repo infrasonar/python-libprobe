@@ -433,7 +433,7 @@ class Probe:
                     # crash when we cannot write the file to disk.
                     logging.warning(f"failed to write `{self._config_path}`")
                 else:
-                    mtime =self._config_path.stat().st_mtime
+                    mtime = self._config_path.stat().st_mtime
 
             # Now decrypt everything so we can use the configuration
             decrypt(config, FERNET)
