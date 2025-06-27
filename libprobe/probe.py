@@ -6,6 +6,8 @@ import time
 import yaml
 import sys
 import json
+import random
+import string
 from cryptography.fernet import Fernet
 from pathlib import Path
 from setproctitle import setproctitle
@@ -405,7 +407,8 @@ class Probe:
         self._protocol = None
 
     def _read_local_config(self):
-        if self._config_path.stat().st_mtime == self._local_config_mtime:
+        mtime = self._config_path.stat().st_mtime
+        if mtime == self._local_config_mtime:
             return
 
         with open(self._config_path, 'r') as fp:
@@ -418,14 +421,19 @@ class Probe:
             # Re-write the file
             if changed:
                 try:
-                    with open(self._config_path, 'w') as fp:
+                    tmp_file = self.tmp_file(str(self._config_path))
+                    with open(tmp_file, 'w') as fp:
                         fp.write(HEADER_FILE)
                         fp.write(yaml.dump(config))
-                except OSError:
+                    os.unlink(self._config_path)
+                    os.rename(tmp_file, self._config_path)
+                except Exception:
                     # This can happen when for example a read-only ConfigMap
                     # is used in Kubernetes. In this case we do not want to
                     # crash when we cannot write the file to disk.
                     logging.warning(f"failed to write `{self._config_path}`")
+                else:
+                    mtime =self._config_path.stat().st_mtime
 
             # Now decrypt everything so we can use the configuration
             decrypt(config, FERNET)
@@ -439,7 +447,7 @@ class Probe:
                         logging.warning(
                             f'both `{section}` and `use` in probe section')
 
-        self._local_config_mtime = self._config_path.stat().st_mtime
+        self._local_config_mtime = mtime
         self._local_config = config
 
     def _asset_config(self, asset_id: int, use: Optional[str]) -> dict:
@@ -633,3 +641,9 @@ class Probe:
             else:
                 logging.debug(f'run check ok; {asset}')
                 self.send(path, res, None, ts)
+
+    @staticmethod
+    def tmp_file(filename: str) -> str:
+        letters = string.ascii_lowercase
+        tmp = ''.join(random.choice(letters) for i in range(10))
+        return f'{filename}.{tmp}'
