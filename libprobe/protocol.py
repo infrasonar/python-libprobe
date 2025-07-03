@@ -3,6 +3,7 @@ import time
 from typing import Callable
 from .net.package import Package
 from .net.protocol import Protocol
+from .exceptions import RespException
 
 
 class AgentcoreProtocol(Protocol):
@@ -19,9 +20,19 @@ class AgentcoreProtocol(Protocol):
 
     PROTO_FAF_UNSET_ASSETS = 0x05  # Remove given assets
 
+    PROTO_REQ_UPLOAD_FILE = 0x7
+
+    PROTO_REQ_DOWNLOAD_FILE = 0x8
+
     PROTO_RES_ANNOUNCE = 0x81
 
     PROTO_RES_INFO = 0x82
+
+    PROTO_RES_ERR = 0xe0
+
+    PROTO_RES_UPLOAD_FILE = 0xe3
+
+    PROTO_RES_DOWNLOAD_FILE = 0x4
 
     def __init__(
         self,
@@ -66,12 +77,36 @@ class AgentcoreProtocol(Protocol):
         logging.debug(f"on unset assets; data size: {len(pkg.data)}")
         self._on_unset_assets(pkg.data)
 
+    def _on_res_err(self, pkg: Package):
+        future = self._get_future(pkg)
+        if future is None:
+            return
+        try:
+            msg = pkg.data
+        except Exception as e:
+            msg = str(e) or type(e).__name__
+        future.set_exception(RespException(msg))
+
+    def _on_res_proxy(self, pkg):
+        future = self._get_future(pkg)
+        if future is None:
+            return
+        try:
+            data = pkg.data
+        except Exception as e:
+            future.set_exception(e)
+        else:
+            future.set_result(data)
+
     def on_package_received(self, pkg: Package, _map={
         PROTO_RES_ANNOUNCE: _on_res_announce,
         PROTO_FAF_SET_ASSETS: _on_faf_set_assets,
         PROTO_REQ_INFO: _on_req_info,
         PROTO_FAF_UPSERT_ASSET: _on_faf_upsert_asset,
         PROTO_FAF_UNSET_ASSETS: _on_faf_unset_assets,
+        PROTO_RES_ERR: _on_res_err,
+        PROTO_RES_UPLOAD_FILE: _on_res_proxy,
+        PROTO_RES_DOWNLOAD_FILE: _on_res_proxy,
     }):
         handle = _map.get(pkg.tp)
         if handle is None:

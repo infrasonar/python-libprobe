@@ -68,3 +68,8 @@ class NoCountException(CheckException):
         super().__init__(
             msg, severity=Severity.LOW if severity is None else severity)
         self.result = result
+
+
+class RespException(Exception):
+    """Response exception from the InfraSonar Hub"""
+    pass

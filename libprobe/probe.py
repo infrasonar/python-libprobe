@@ -24,7 +24,7 @@ from .net.package import Package
 from .protocol import AgentcoreProtocol
 from .asset import Asset
 from .config import encrypt, decrypt, get_config
-
+from .response import UploadFile, FileType
 
 HEADER_FILE = """
 # WARNING: InfraSonar will make `password` and `secret` values unreadable but
@@ -405,6 +405,35 @@ class Probe:
         if self._protocol and self._protocol.transport:
             self._protocol.transport.close()
         self._protocol = None
+
+    async def upload_file(self, name: str, blob: bytes,
+                          timeout: int = 10) -> UploadFile:
+        pkg = Package.make(
+            AgentcoreProtocol.PROTO_REQ_UPLOAD_FILE,
+            data={"name": name, "blob": blob}
+        )
+        if not self._protocol:
+            raise ConnectionError('no connection')
+
+        resp = await self._protocol.request(pkg, timeout=timeout)
+        return UploadFile(
+            id=resp['id'],
+            size=resp['size'],
+            name=resp['name'],
+            type=FileType.get(resp['type']),
+            created=resp['created']
+        )
+
+    async def download_file(self, file_id: int, timeout: int = 10) -> bytes:
+        pkg = Package.make(
+            AgentcoreProtocol.PROTO_REQ_DOWNLOAD_FILE,
+            data={"id": file_id}
+        )
+        if not self._protocol:
+            raise ConnectionError('no connection')
+
+        resp = await self._protocol.request(pkg, timeout=timeout)
+        return resp
 
     def _read_local_config(self):
         mtime = self._config_path.stat().st_mtime
