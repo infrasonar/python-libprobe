@@ -115,6 +115,19 @@ if __name__ == "__main__":
     probe.start()
 ```
 
+## On CLose
+
+Using the `set_on_close()` method, it is possible to configure a method which will be called before the probe is stopped.
+This can be useful in case you want to nicely close some connections.
+
+```python
+async def custom_on_close():
+    ...
+
+probe = Probe("myProbe", '3.0.0', {})
+probe.set_on_close(custom_on_close)
+```
+
 ## ASCII item names
 
 InfraSonar requires each item to have a unique _name_ property. The value for _name_ must be a _string_ with ASCII compatible character.

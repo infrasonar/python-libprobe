@@ -136,6 +136,7 @@ class Probe:
         self._checks: Dict[Tuple[int, int], asyncio.Future] = {}
         self._dry_run: Optional[Tuple[Asset, dict]] = \
             None if dry_run is None else self._load_dry_run_assst(dry_run)
+        self._on_close: Callable[[], Awaitable[None]] | None = None
 
         if not os.path.exists(config_path):
             try:
@@ -202,11 +203,17 @@ class Probe:
     def is_connecting(self) -> bool:
         return self._connecting
 
+    def set_on_close(self, on_close: Callable[[], Awaitable[None]]):
+        self._on_close = on_close
+
     def _stop(self, signame, *args):
         logging.warning(
             f'signal \'{signame}\' received, stop {self.name} probe')
-        for task in asyncio.all_tasks():
-            task.cancel()
+        if self._on_close is not None and self.loop is not None:
+            self.loop.run_until_complete(self._on_close())
+        else:
+            for task in asyncio.all_tasks():
+                task.cancel()
 
     async def _start(self):
         initial_step = 2
@@ -335,6 +342,8 @@ class Probe:
             output = json.dumps(response, indent=2)
             print(output)
         print('', file=sys.stderr)
+        if self._on_close is not None:
+            await self._on_close()
 
     async def _connect(self):
         assert self.loop is not None
