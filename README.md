@@ -60,7 +60,7 @@ class MyFirstCheck(Check):
             local configuration for this asset, for example
             credentials;
         config:
-            asset configuration for this check; contains for example the
+            configuration for this check; contains for example the
             interval at which the check is running and an address of
             the asset to probe;
         """
