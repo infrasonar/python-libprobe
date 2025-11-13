@@ -378,14 +378,17 @@ class Probe:
         finally:
             self._connecting = False
 
-    def _unchanged(self, path: tuple, result: dict) -> bool:
+    def _unchanged(self, path: tuple, result: dict | None) -> bool:
         if not self._unchanged_eol:
             return False
         eol, prev = self._prev_checks.get(path, (0.0, None))
         now = time.time()
         if eol > now and prev == result:
             return True
-        self._prev_checks[path] = now + self._unchanged_eol, result
+        if result is None:
+            self._prev_checks.pop(path, None)
+        else:
+            self._prev_checks[path] = now + self._unchanged_eol, result
         return False
 
     def send(
@@ -408,7 +411,7 @@ class Probe:
         if no_count:
             framework['no_count'] = True
 
-        if result and self._unchanged(path, result):
+        if self._unchanged(path, result):
             logging.debug('using previous result (unchanged)')
             framework['unchanged'] = True
         else:
