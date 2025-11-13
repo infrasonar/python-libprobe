@@ -137,8 +137,8 @@ class Probe:
         self._dry_run: Optional[Tuple[Asset, dict]] = \
             None if dry_run is None else self._load_dry_run_assst(dry_run)
         self._on_close: Callable[[], Awaitable[None]] | None = None
-        self._prev_checks: Dict[tuple, dict] = {}  # empty if DISABLE_UNCHANGED
-        self._no_unchanged = bool(int(os.getenv('DISABLE_UNCHANGED', '0')))
+        self._prev_checks: Dict[tuple, Tuple[float, dict]] = {}
+        self._unchanged_age = float(os.getenv('UNCHANGED_AGE', '14400'))
 
         if not os.path.exists(config_path):
             try:
@@ -379,12 +379,13 @@ class Probe:
             self._connecting = False
 
     def _unchanged(self, path: tuple, result: dict) -> bool:
-        if self._no_unchanged:
+        if not self._unchanged_age:
             return False
-        prev = self._prev_checks.get(path)
-        if prev == result:
+        eol, prev = self._prev_checks.get(path, (0.0, None))
+        now = time.time()
+        if eol > now and prev == result:
             return True
-        self._prev_checks[path] = result
+        self._prev_checks[path] = now + self._unchanged_age, result
         return False
 
     def send(
@@ -408,6 +409,7 @@ class Probe:
             framework['no_count'] = True
 
         if result and self._unchanged(path, result):
+            logging.debug('using previous result (unchanged)')
             framework['unchanged'] = True
         else:
             check_data['result'] = result
