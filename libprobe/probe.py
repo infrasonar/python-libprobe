@@ -11,7 +11,7 @@ import string
 from cryptography.fernet import Fernet
 from pathlib import Path
 from setproctitle import setproctitle
-from typing import Optional, Dict, Tuple, Callable, Awaitable, Mapping
+from typing import Callable, Awaitable, Mapping
 from .exceptions import (
     CheckException,
     IgnoreResultException,
@@ -25,6 +25,8 @@ from .protocol import AgentcoreProtocol
 from .asset import Asset
 from .config import encrypt, decrypt, get_config
 from .response import UploadFile, FileType
+from .check import Check
+
 
 HEADER_FILE = """
 # WARNING: InfraSonar will make `password` and `secret` values unreadable but
@@ -97,7 +99,7 @@ class Probe:
         self,
         name: str,
         version: str,
-        checks: Mapping[str, Callable[[Asset, dict, dict], Awaitable[dict]]],
+        checks: tuple[type[Check], ...],
         config_path: str = INFRASONAR_CONF_FN
     ):
         """Initialize a Infrasonar probe.
@@ -117,26 +119,26 @@ class Probe:
         logger.setup_logger()
         start_msg = 'starting' if dry_run is None else 'dry-run'
         logging.warning(f'{start_msg} probe collector: {name} v{version}')
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self.loop: asyncio.AbstractEventLoop | None = None
         self.name: str = name
         self.version: str = version
-        self._checks_funs: Mapping[
-            str,
-            Callable[[Asset, dict, dict], Awaitable[dict]]] = checks
+        self._my_checks: Mapping[str, type[Check]] = {
+            check.key: check for check in checks}
         self._config_path: Path = Path(config_path)
         self._connecting: bool = False
-        self._protocol: Optional[AgentcoreProtocol] = None
+        self._protocol: AgentcoreProtocol | None = None
         self._retry_next: int = 0
         self._retry_step: int = 1
-        self._local_config: Optional[dict] = None
-        self._local_config_mtime: Optional[float] = None
-        self._checks_config: Dict[
-            Tuple[int, int],
-            Tuple[Tuple[str, str], dict]] = {}
-        self._checks: Dict[Tuple[int, int], asyncio.Future] = {}
-        self._dry_run: Optional[Tuple[Asset, dict]] = \
+        self._local_config: dict | None = None
+        self._local_config_mtime: float | None = None
+        self._checks_config: dict[
+            tuple[int, int],
+            tuple[tuple[str, str], dict]] = {}
+        self._checks: dict[tuple[int, int], asyncio.Future] = {}
+        self._dry_run: tuple[Asset, dict] | None = \
             None if dry_run is None else self._load_dry_run_assst(dry_run)
         self._on_close: Callable[[], Awaitable[None]] | None = None
+        self._prev_checks: dict[tuple, tuple[float, dict]] = {}
 
         if not os.path.exists(config_path):
             try:
@@ -155,7 +157,7 @@ class Probe:
             logging.exception(f"configuration file invalid: {config_path}")
             exit(1)
 
-    def _load_dry_run_assst(self, dry_run: dict) -> Tuple[Asset, dict]:
+    def _load_dry_run_assst(self, dry_run: dict) -> tuple[Asset, dict]:
         asset = dry_run.get('asset')
 
         if not isinstance(asset, dict):
@@ -182,8 +184,8 @@ class Probe:
                 f'Missing or invalid `check` in {DRY_RUN}; example: {EDR}')
             exit(1)
 
-        if check_key not in self._checks_funs:
-            available = ', '.join(self._checks_funs.keys())
+        if check_key not in self._my_checks:
+            available = ', '.join(self._my_checks.keys())
             logging.error(
                 f'Unknown check `{check_key}` in {DRY_RUN}; '
                 f'Available checks: {available}')
@@ -229,7 +231,7 @@ class Probe:
             for _ in range(step):
                 await asyncio.sleep(1)
 
-    def start(self, loop: Optional[asyncio.AbstractEventLoop] = None):
+    def start(self, loop: asyncio.AbstractEventLoop | None = None):
         """Start a Infrasonar probe
 
         Args:
@@ -255,8 +257,8 @@ class Probe:
         assert self._dry_run is not None
         asset, config = self._dry_run
         timeout = MAX_CHECK_TIMEOUT
-        asset_config = self._asset_config(asset.id, config.get('_use'))
-        fun = self._checks_funs[asset.check]
+        local_config = self._get_local_config(asset.id, config.get('_use'))
+        check = self._my_checks[asset.check]
         ts = time.time()
 
         logging.debug(f'run check (dry-run); {asset}')
@@ -265,7 +267,8 @@ class Probe:
         try:
             try:
                 res = await asyncio.wait_for(
-                    fun(asset, asset_config, config), timeout=timeout)
+                    check.run(asset, local_config, config),
+                    timeout=timeout)
                 if not isinstance(res, dict):
                     raise TypeError(
                         'expecting type `dict` as check result '
@@ -376,11 +379,28 @@ class Probe:
         finally:
             self._connecting = False
 
+    def _unchanged(self, check: type[Check], path: tuple,
+                   result: dict | None) -> bool:
+        if not check.unchanged_eol:
+            return False
+        if result is None:
+            self._prev_checks.pop(path, None)
+            return False
+
+        eol, prev = self._prev_checks.get(path, (0.0, None))
+        now = time.time()
+        if eol > now and prev == result:
+            return True
+
+        self._prev_checks[path] = now + check.unchanged_eol, result
+        return False
+
     def send(
             self,
+            check: type[Check],
             path: tuple,
-            result: Optional[dict],
-            error: Optional[dict],
+            result: dict | None,
+            error: dict | None,
             ts: float,
             no_count: bool = False):
         asset_id, _ = path
@@ -388,14 +408,20 @@ class Probe:
             'duration': time.time() - ts,
             'timestamp': int(ts),
         }
-        if no_count:
-            framework['no_count'] = True
-
         check_data = {
-            'result': result,
             'error': error,
             'framework': framework
         }
+
+        if no_count:
+            framework['no_count'] = True
+
+        if self._unchanged(check, path, result):
+            logging.debug('using previous result (unchanged)')
+            framework['unchanged'] = True
+        else:
+            check_data['result'] = result
+
         pkg = Package.make(
             AgentcoreProtocol.PROTO_FAF_DUMP,
             partid=asset_id,
@@ -406,7 +432,7 @@ class Probe:
         if len(data) > MAX_PACKAGE_SIZE:
             e = CheckException(f'data package too large ({len(data)} bytes)')
             logging.error(f'check error; asset_id `{asset_id}`; {str(e)}')
-            self.send(path, None, e.to_dict(), ts)
+            self.send(check, path, None, e.to_dict(), ts)
         elif self._protocol and self._protocol.transport:
             self._protocol.transport.write(data)
 
@@ -488,7 +514,7 @@ class Probe:
         self._local_config_mtime = mtime
         self._local_config = config
 
-    def _asset_config(self, asset_id: int, use: Optional[str]) -> dict:
+    def _get_local_config(self, asset_id: int, use: str | None) -> dict:
         try:
             self._read_local_config()
         except Exception:
@@ -514,7 +540,7 @@ class Probe:
         new = {
             tuple(path): (names, config)
             for path, names, config in checks
-            if names[CHECK_NAME_IDX] in self._checks_funs}
+            if names[CHECK_NAME_IDX] in self._my_checks}
         new_checks_config.update(new)
         self._set_new_checks_config(new_checks_config)
 
@@ -522,7 +548,7 @@ class Probe:
         new_checks_config = {
             tuple(path): (names, config)
             for path, names, config in assets
-            if names[CHECK_NAME_IDX] in self._checks_funs}
+            if names[CHECK_NAME_IDX] in self._my_checks}
         self._set_new_checks_config(new_checks_config)
 
     def _set_new_checks_config(self, new_checks_config: dict):
@@ -562,7 +588,7 @@ class Probe:
         asset_id, check_id = path
         (asset_name, check_key), config = self._checks_config[path]
         interval = config.get('_interval')
-        fun = self._checks_funs[check_key]
+        check = self._my_checks[check_key]
         asset = Asset(asset_id, asset_name, check_key)
 
         my_task = self._checks[path]
@@ -612,14 +638,15 @@ class Probe:
                 # asset_id and check_key are truly immutable, name is not
                 asset = Asset(asset_id, asset_name, check_key)
 
-            asset_config = self._asset_config(asset.id, config.get('_use'))
+            local_config = self._get_local_config(asset.id, config.get('_use'))
 
             logging.debug(f'run check; {asset}')
 
             try:
                 try:
                     res = await asyncio.wait_for(
-                        fun(asset, asset_config, config), timeout=timeout)
+                        check.run(asset, local_config, config),
+                        timeout=timeout)
                     if not isinstance(res, dict):
                         raise TypeError(
                             'expecting type `dict` as check result '
@@ -658,27 +685,28 @@ class Probe:
                 logging.warning(
                     'incomplete result; '
                     f'{asset} error: `{e}` severity: {e.severity}')
-                self.send(path, e.result, e.to_dict(), ts)
+                self.send(check, path, e.result, e.to_dict(), ts)
 
             except NoCountException as e:
                 if not e.is_exception:
                     logging.debug(f'run check ok ({e}); {asset}')
-                    self.send(path, e.result, None, ts, no_count=True)
+                    self.send(check, path, e.result, None, ts, no_count=True)
                 else:
                     logging.warning(
                         'incomplete result (no count); '
                         f'{asset} error: `{e}` severity: {e.severity}')
-                    self.send(path, e.result, e.to_dict(), ts, no_count=True)
+                    self.send(check, path, e.result, e.to_dict(), ts,
+                              no_count=True)
 
             except CheckException as e:
                 logging.error(
                     'check error; '
                     f'{asset} error: `{e}` severity: {e.severity}')
-                self.send(path, None, e.to_dict(), ts)
+                self.send(check, path, None, e.to_dict(), ts)
 
             else:
                 logging.debug(f'run check ok; {asset}')
-                self.send(path, res, None, ts)
+                self.send(check, path, res, None, ts)
 
     @staticmethod
     def tmp_file(filename: str) -> str:

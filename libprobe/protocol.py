@@ -12,11 +12,11 @@ class AgentcoreProtocol(Protocol):
 
     PROTO_REQ_ANNOUNCE = 0x01
 
-    PROTO_FAF_SET_ASSETS = 0x02  # Overwites all assets
+    PROTO_FAF_SET_ASSETS = 0x02  # Overwrites all assets
 
     PROTO_REQ_INFO = 0x03
 
-    PROTO_FAF_UPSERT_ASSET = 0x04  # Overwite/Add a single asset
+    PROTO_FAF_UPSERT_ASSET = 0x04  # Overwrite or Add a single asset
 
     PROTO_FAF_UNSET_ASSETS = 0x05  # Remove given assets
 

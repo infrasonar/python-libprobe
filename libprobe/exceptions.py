@@ -1,5 +1,4 @@
 from .severity import Severity
-from typing import Optional
 
 
 class IgnoreResultException(Exception):
@@ -62,7 +61,7 @@ class NoCountException(CheckException):
             self,
             msg: str,
             result: dict,
-            severity: Optional[Severity] = None):
+            severity: Severity | None = None):
         assert isinstance(result, dict)
         self.is_exception = severity is not None
         super().__init__(

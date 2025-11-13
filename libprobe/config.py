@@ -17,7 +17,6 @@ exampleProbe:
         username: charlie
         password: "my other secret"
 """
-from typing import Optional
 import logging
 
 
@@ -50,7 +49,7 @@ def decrypt(layer, fernet):
             decrypt(v, fernet)
 
 
-def get_config(conf: dict, probe_name: str, asset_id: int, use: Optional[str]):
+def get_config(conf: dict, probe_name: str, asset_id: int, use: str | None):
     # use might both be None or an empty string, depending if the `_use` option
     # is available for the probe; both must be ignored
     probe = conf.get(use or probe_name)
