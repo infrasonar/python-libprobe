@@ -138,7 +138,7 @@ class Probe:
             None if dry_run is None else self._load_dry_run_assst(dry_run)
         self._on_close: Callable[[], Awaitable[None]] | None = None
         self._prev_checks: Dict[tuple, Tuple[float, dict]] = {}
-        self._unchanged_age = float(os.getenv('UNCHANGED_AGE', '14400'))
+        self._unchanged_eol = float(os.getenv('UNCHANGED_EOL', '14400'))
 
         if not os.path.exists(config_path):
             try:
@@ -379,13 +379,13 @@ class Probe:
             self._connecting = False
 
     def _unchanged(self, path: tuple, result: dict) -> bool:
-        if not self._unchanged_age:
+        if not self._unchanged_eol:
             return False
         eol, prev = self._prev_checks.get(path, (0.0, None))
         now = time.time()
         if eol > now and prev == result:
             return True
-        self._prev_checks[path] = now + self._unchanged_age, result
+        self._prev_checks[path] = now + self._unchanged_eol, result
         return False
 
     def send(
