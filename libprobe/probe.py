@@ -11,7 +11,7 @@ import string
 from cryptography.fernet import Fernet
 from pathlib import Path
 from setproctitle import setproctitle
-from typing import Optional, Dict, Tuple, Callable, Awaitable, Mapping
+from typing import Callable, Awaitable, Mapping
 from .exceptions import (
     CheckException,
     IgnoreResultException,
@@ -117,7 +117,7 @@ class Probe:
         logger.setup_logger()
         start_msg = 'starting' if dry_run is None else 'dry-run'
         logging.warning(f'{start_msg} probe collector: {name} v{version}')
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self.loop: asyncio.AbstractEventLoop | None = None
         self.name: str = name
         self.version: str = version
         self._checks_funs: Mapping[
@@ -125,19 +125,19 @@ class Probe:
             Callable[[Asset, dict, dict], Awaitable[dict]]] = checks
         self._config_path: Path = Path(config_path)
         self._connecting: bool = False
-        self._protocol: Optional[AgentcoreProtocol] = None
+        self._protocol: AgentcoreProtocol | None = None
         self._retry_next: int = 0
         self._retry_step: int = 1
-        self._local_config: Optional[dict] = None
-        self._local_config_mtime: Optional[float] = None
-        self._checks_config: Dict[
-            Tuple[int, int],
-            Tuple[Tuple[str, str], dict]] = {}
-        self._checks: Dict[Tuple[int, int], asyncio.Future] = {}
-        self._dry_run: Optional[Tuple[Asset, dict]] = \
+        self._local_config: dict | None = None
+        self._local_config_mtime: float | None = None
+        self._checks_config: dict[
+            tuple[int, int],
+            tuple[tuple[str, str], dict]] = {}
+        self._checks: dict[tuple[int, int], asyncio.Future] = {}
+        self._dry_run: tuple[Asset, dict] | None = \
             None if dry_run is None else self._load_dry_run_assst(dry_run)
         self._on_close: Callable[[], Awaitable[None]] | None = None
-        self._prev_checks: Dict[tuple, Tuple[float, dict]] = {}
+        self._prev_checks: dict[tuple, tuple[float, dict]] = {}
         self._unchanged_eol = float(os.getenv('UNCHANGED_EOL', '14400'))
 
         if not os.path.exists(config_path):
@@ -157,7 +157,7 @@ class Probe:
             logging.exception(f"configuration file invalid: {config_path}")
             exit(1)
 
-    def _load_dry_run_assst(self, dry_run: dict) -> Tuple[Asset, dict]:
+    def _load_dry_run_assst(self, dry_run: dict) -> tuple[Asset, dict]:
         asset = dry_run.get('asset')
 
         if not isinstance(asset, dict):
@@ -231,7 +231,7 @@ class Probe:
             for _ in range(step):
                 await asyncio.sleep(1)
 
-    def start(self, loop: Optional[asyncio.AbstractEventLoop] = None):
+    def start(self, loop: asyncio.AbstractEventLoop | None = None):
         """Start a Infrasonar probe
 
         Args:
@@ -391,8 +391,8 @@ class Probe:
     def send(
             self,
             path: tuple,
-            result: Optional[dict],
-            error: Optional[dict],
+            result: dict | None,
+            error: dict | None,
             ts: float,
             no_count: bool = False):
         asset_id, _ = path
@@ -506,7 +506,7 @@ class Probe:
         self._local_config_mtime = mtime
         self._local_config = config
 
-    def _asset_config(self, asset_id: int, use: Optional[str]) -> dict:
+    def _asset_config(self, asset_id: int, use: str | None) -> dict:
         try:
             self._read_local_config()
         except Exception:
