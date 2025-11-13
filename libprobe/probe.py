@@ -381,14 +381,16 @@ class Probe:
     def _unchanged(self, path: tuple, result: dict | None) -> bool:
         if not self._unchanged_eol:
             return False
+        if result is None:
+            self._prev_checks.pop(path, None)
+            return False
+
         eol, prev = self._prev_checks.get(path, (0.0, None))
         now = time.time()
         if eol > now and prev == result:
             return True
-        if result is None:
-            self._prev_checks.pop(path, None)
-        else:
-            self._prev_checks[path] = now + self._unchanged_eol, result
+
+        self._prev_checks[path] = now + self._unchanged_eol, result
         return False
 
     def send(
