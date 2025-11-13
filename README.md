@@ -20,6 +20,7 @@ Variable            | Default                        | Description
 `LOG_COLORIZED`     | `0`                            | Log using colors (`0`=disabled, `1`=enabled).
 `LOG_FTM`           | `%y%m%d %H:%M:%S`              | Log format prefix.
 `OUTPUT_TYPE`       | `JSON`                         | Set the output type to `JSON` or `PPRINT` (Only for a dry run).
+`DISABLE_UNCHANGED` | `0`                            | Disable keeping track of unchanged check results.
 
 ## Usage
 

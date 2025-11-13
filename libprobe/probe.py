@@ -137,6 +137,8 @@ class Probe:
         self._dry_run: Optional[Tuple[Asset, dict]] = \
             None if dry_run is None else self._load_dry_run_assst(dry_run)
         self._on_close: Callable[[], Awaitable[None]] | None = None
+        self._prev_checks: Dict[tuple, dict] = {}  # empty if DISABLE_UNCHANGED
+        self._no_unchanged = bool(int(os.getenv('DISABLE_UNCHANGED', '0')))
 
         if not os.path.exists(config_path):
             try:
@@ -376,6 +378,15 @@ class Probe:
         finally:
             self._connecting = False
 
+    def _unchanged(self, path: tuple, result: dict) -> bool:
+        if self._no_unchanged:
+            return False
+        prev = self._prev_checks.get(path)
+        if prev == result:
+            return True
+        self._prev_checks[path] = result
+        return False
+
     def send(
             self,
             path: tuple,
@@ -388,14 +399,19 @@ class Probe:
             'duration': time.time() - ts,
             'timestamp': int(ts),
         }
-        if no_count:
-            framework['no_count'] = True
-
         check_data = {
-            'result': result,
             'error': error,
             'framework': framework
         }
+
+        if no_count:
+            framework['no_count'] = True
+
+        if result and self._unchanged(path, result):
+            framework['unchanged'] = True
+        else:
+            check_data['result'] = result
+
         pkg = Package.make(
             AgentcoreProtocol.PROTO_FAF_DUMP,
             partid=asset_id,
