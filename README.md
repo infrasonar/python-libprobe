@@ -20,7 +20,6 @@ Variable            | Default                        | Description
 `LOG_COLORIZED`     | `0`                            | Log using colors (`0`=disabled, `1`=enabled).
 `LOG_FTM`           | `%y%m%d %H:%M:%S`              | Log format prefix.
 `OUTPUT_TYPE`       | `JSON`                         | Set the output type to `JSON` or `PPRINT` (Only for a dry run).
-`UNCHANGED_EOL`     | `14400`                        | Unchanged End-Of-Life in X seconds. Prevents sending equal check data, a value of `0` disables `unchanged` _(defaults to 4 hours)_.
 
 ## Usage
 
@@ -31,6 +30,7 @@ import logging
 from libprobe import logger
 from libprobe.asset import Asset
 from libprobe.probe import Probe
+from libprobe.check import Check
 from libprobe.severity import Severity
 from libprobe.exceptions import (
     CheckException,
@@ -43,71 +43,84 @@ from libprobe.exceptions import (
 __version__ = "0.1.0"
 
 
-async def my_first_check(asset: Asset, asset_config: dict, check_config: dict):
-    """My first check.
-    Arguments:
-      asset:        Asset contains an id, name and check which should be used
-                    for logging;
-      asset_config: local configuration for this asset, for example credentials;
-      check_config: configuration for this check; contains for example the
-                    interval at which the check is running and an address of
-                    the asset to probe;
-    """
-    if "ignore_this_check_iteration":
-        # nothing will be send to InfraSonar for this check iteration;
-        raise IgnoreResultException()
+class MyFirstCheck(Check):
 
-    if "no_longer_try_this_check":
-        # nothing will be send to InfraSonar for this check iteration and the
-        # check will not start again until the probe restarts or configuration
-        # has been changed;
-        raise IgnoreCheckException()
+    key = 'myFirstCheck'
+    unchanged_eol = 0  # Can be for example 14400, to prevent sending the same
+                       # check result for the next 4 hours
 
-    if "something_has_happened":
-        # send a check error to InfraSonar because something has happened which
-        # prevents us from building a check result; The default severity for a
-        # CheckException is MEDIUM but this can be overwritten;
-        raise CheckException("something went wrong", severity=Severity.LOW)
+    @staticmethod
+    async def run(asset: Asset, local_config: dict, config: dict) -> dict:
+        """My first check.
+        Arguments:
+        asset:
+            Asset contains an id, name and check which should be used
+            for logging;
+        local_config:
+            local configuration for this asset, for example
+            credentials;
+        config:
+            asset configuration for this check; contains for example the
+            interval at which the check is running and an address of
+            the asset to probe;
+        """
+        if "ignore_this_check_iteration":
+            # nothing will be send to InfraSonar for this check iteration;
+            raise IgnoreResultException()
 
-    if "something_unexpected_has_happened":
-        # other exceptions will be converted to CheckException, MEDIUM severity
-        raise Exception("something went wrong")
+        if "no_longer_try_this_check":
+            # nothing will be send to InfraSonar for this check iteration and
+            # the check will not start again until the probe restarts or
+            # configuration has been changed;
+            raise IgnoreCheckException()
 
-    # A check result may have multiple types, items, and/or metrics
-    result = {"myType": [{"name": "my item"}]}
+        if "something_has_happened":
+            # send a check error to InfraSonar because something has happened
+            # which prevents us from building a check result; The default
+            # severity for a CheckException is MEDIUM but this can be
+            # overwritten;
+            raise CheckException("something went wrong", severity=Severity.LOW)
 
-    if "result_is_incomplete":
-        # optionally, IncompleteResultException can be given another severity;
-        # the default severity is LOW.
-        raise IncompleteResultException('missing type x', result)
+        if "something_unexpected_has_happened":
+            # exceptions will be converted to CheckException, MEDIUM severity
+            raise Exception("something went wrong")
 
-    if "not_count_as_check_result":
-        # optionally, NoCountException can be raised in which case the check
-        # result is not counted by InfraSonar; Thus, the last seen services
-        # will not "see" this check result.
-        # A severity can be given if we also want a check error; (similar to
-        # the IncompleteResultException exception)
-        raise NoCountException('do not count this check result', result)
+        # A check result may have multiple types, items, and/or metrics
+        result = {"myType": [{"name": "my item"}]}
 
-    # Use the asset in logging; this will include asset info and the check key
-    logging.info(f"log something; {asset}")
+        if "result_is_incomplete":
+            # optionally, IncompleteResultException with severity;
+            # the default severity is LOW.
+            raise IncompleteResultException('missing type x', result)
 
-    # In alpha versions and debug logging enabled, unknown exception will be
-    # logged when debug logging is enabled. You may use logger.exception()
-    # yourself if you want exception logging for debug logging only.
-    try:
-        42 / 0  # ZeroDivision error for example
-    except Exception:
-        logger.exception()  # log the exception only when DEBUG logging
+        if "not_count_as_check_result":
+            # optionally, NoCountException can be raised in which case the
+            # check result is not counted by InfraSonar; Thus, the last seen
+            # services will not "see" this check result.
+            # A severity can be given if we also want a check error;
+            # (similar to the IncompleteResultException exception)
+            raise NoCountException('do not count this check result', result)
 
-    # Return the check result
-    return result
+        # Use the asset in logging; includes asset info and the check key
+        logging.info(f"log something; {asset}")
+
+        # In alpha versions and debug logging enabled, unknown exception will
+        # be logged when debug logging is enabled.
+        # You may use logger.exception() yourself if you want exception
+        # logging for debug logging only.
+        try:
+            42 / 0  # ZeroDivision error for example
+        except Exception:
+            logger.exception()  # log the exception only when DEBUG logging
+
+        # Return the check result
+        return result
 
 
 if __name__ == "__main__":
-    checks = {
-        "myFirstCheck": my_first_check,
-    }
+    checks = (
+        MyFirstCheck
+    )
 
     # Initialize the probe with a name, version and checks
     probe = Probe("myProbe", __version__, checks)
