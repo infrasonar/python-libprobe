@@ -47,7 +47,7 @@ class MyFirstCheck(Check):
 
     key = 'myFirstCheck'
     unchanged_eol = 0  # Can be for example 14400, to prevent sending the same
-                       # check result for the next 4 hours
+                       # check result for the next 4 hours (0=disabled)
 
     @staticmethod
     async def run(asset: Asset, local_config: dict, config: dict) -> dict:
