@@ -3,6 +3,6 @@ def _item_name(item: dict) -> str:
 
 
 def order(result: dict):
-    """Return the result ordered by items name."""
+    """Order result items by item name."""
     for items in result.values():
         items.sort(key=_item_name)
