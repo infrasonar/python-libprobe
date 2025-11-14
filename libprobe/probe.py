@@ -26,6 +26,7 @@ from .asset import Asset
 from .config import encrypt, decrypt, get_config
 from .response import UploadFile, FileType
 from .check import Check
+from .utils import order
 
 
 HEADER_FILE = """
@@ -386,6 +387,8 @@ class Probe:
         if result is None:
             self._prev_checks.pop(path, None)
             return False
+
+        order(result)
 
         eol, prev = self._prev_checks.get(path, (0.0, None))
         now = time.time()
