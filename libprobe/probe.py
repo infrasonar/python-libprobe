@@ -417,7 +417,7 @@ class Probe:
             framework['no_count'] = True
 
         if self._unchanged(check, path, result):
-            logging.debug('using previous result (unchanged)')
+            logging.debug(f'using `unchanged` result for `{check.key}`')
             framework['unchanged'] = True
         else:
             check_data['result'] = result
