@@ -381,10 +381,10 @@ class Probe:
             self._connecting = False
 
     def _unchanged(self, check: type[Check], path: tuple,
-                   result: dict | None) -> bool:
+                   result: dict | None, error: dict | None) -> bool:
         if not check.unchanged_eol:
             return False
-        if result is None:
+        if result is None or error is not None:
             self._prev_checks.pop(path, None)
             return False
 
@@ -419,7 +419,7 @@ class Probe:
         if no_count:
             framework['no_count'] = True
 
-        if self._unchanged(check, path, result):
+        if self._unchanged(check, path, result, error):
             logging.debug(
                 f'using unchanged for asset Id {asset_id}, check: {check.key}')
             framework['unchanged'] = True
