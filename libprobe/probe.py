@@ -417,7 +417,8 @@ class Probe:
             framework['no_count'] = True
 
         if self._unchanged(check, path, result):
-            logging.debug(f'using `unchanged` result for `{check.key}`')
+            logging.debug(
+                f'using unchanged for asset Id {asset_id}, check: {check.key}')
             framework['unchanged'] = True
         else:
             check_data['result'] = result
