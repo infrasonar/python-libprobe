@@ -12,7 +12,7 @@ class IgnoreResultException(Exception):
 
 
 class IgnoreCheckException(Exception):
-    """IgnoreResultException must be raised by a check if the result needs
+    """IgnoreCheckException must be raised by a check if the result needs
     to be ignored and we no longer want this check to run.
 
     - Nothing for this check will be returned to the AgentCore.
