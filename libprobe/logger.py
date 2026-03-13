@@ -62,7 +62,8 @@ def setup_logger(name: str = 'root', loggers: tuple[str, ...] = tuple()):
     for name in loggers:
         logger = logging.getLogger(name)
         logger.setLevel(log_level)
-        logger.addHandler(ch)
+        if not logger.hasHandlers():
+            logger.addHandler(ch)
 
 
 def exception(msg: str = ''):
