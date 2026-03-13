@@ -14,19 +14,21 @@ _MAP_LOG_LEVELS = {
 }
 
 
-def setup_logger():
+def setup_logger(name: str = 'root', loggers: tuple[str, ...] = tuple()):
     """Setup logger."""
 
     _LOG_LEVEL = os.getenv('LOG_LEVEL', 'warning')
     _LOG_COLORIZED = int(os.getenv('LOG_COLORIZED', '0'))
     _LOG_DATE_FMT = os.getenv('LOG_FMT', '%y%m%d %H:%M:%S')
 
+    incl_name = '%(name)s:' if loggers else ''
+
     if _LOG_COLORIZED:
         # setup colorized formatter
         formatter = colorlog.ColoredFormatter(
             fmt=(
-                '%(log_color)s[%(levelname)1.1s %(asctime)s %(module)s'
-                ':%(lineno)d]%(reset)s %(message)s'),
+                '%(log_color)s[%(levelname)1.1s %(asctime)s '
+                f'{incl_name}%(module)s:%(lineno)d]%(reset)s %(message)s'),
             datefmt=_LOG_DATE_FMT,
             reset=True,
             log_colors={
@@ -41,19 +43,26 @@ def setup_logger():
         # setup formatter without using colors
         formatter = logging.Formatter(
             fmt=(
-                '[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d] '
-                '%(message)s'),
+                '[%(levelname)1.1s %(asctime)s '
+                f'{incl_name}%(module)s:%(lineno)d] %(message)s'),
             datefmt=_LOG_DATE_FMT,
             style='%')
 
+    log_level = _MAP_LOG_LEVELS[_LOG_LEVEL.upper()]
     logger = logging.getLogger()
-    logger.setLevel(_MAP_LOG_LEVELS[_LOG_LEVEL.upper()])
+    logger.setLevel(log_level)
+    logger.name = name
     ch = logging.StreamHandler()
 
     # we can set the handler level to DEBUG since we control the root level
     ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+    for name in loggers:
+        logger = logging.getLogger(name)
+        logger.setLevel(log_level)
+        logger.addHandler(ch)
 
 
 def exception(msg: str = ''):

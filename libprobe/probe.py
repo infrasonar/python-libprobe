@@ -101,7 +101,8 @@ class Probe:
         name: str,
         version: str,
         checks: tuple[type[Check], ...],
-        config_path: str = INFRASONAR_CONF_FN
+        config_path: str = INFRASONAR_CONF_FN,
+        loggers: tuple[str, ...] = tuple(),
     ):
         """Initialize a Infrasonar probe.
 
@@ -117,7 +118,7 @@ class Probe:
                 `/data/config/infrasonar.yaml`.
         """
         setproctitle(name)
-        logger.setup_logger()
+        logger.setup_logger(name=name, loggers=loggers)
         start_msg = 'starting' if dry_run is None else 'dry-run'
         logging.warning(f'{start_msg} probe collector: {name} v{version}')
         self.loop: asyncio.AbstractEventLoop | None = None

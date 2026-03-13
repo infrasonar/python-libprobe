@@ -1,9 +1,10 @@
 """setup.py
-locan installation: pip install -e .
+local installation: pip install -e .
 
-python setup.py sdist
-twine upload --repository pypitest dist/libprobe-x.x.x.tar.gz
-twine upload --repository pypi dist/libprobe-x.x.x.tar.gz
+python -m build
+twine upload --repository pypitest dist/libprobe-x.x.x*
+twine upload --repository pypi dist/libprobe-x.x.x*
+
 """
 from setuptools import setup, find_packages
 from libprobe.version import __version__ as version
@@ -44,6 +45,8 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Programming Language :: Python :: 3.14',
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Text Processing :: Linguistic'
