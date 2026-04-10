@@ -17,7 +17,8 @@ exampleProbe:
         username: charlie
         password: "my other secret"
 """
-import logging
+from .exceptions import CheckException
+from .severity import Severity
 
 
 def encrypt(layer, fernet) -> bool:
@@ -56,9 +57,12 @@ def get_config(conf: dict, probe_name: str, asset_id: int, use: str | None):
 
     if not isinstance(probe, dict):
         if use:
-            logging.warning(
-                f'probe config `{use}` is '
-                'explicitly configured but is not found')
+            raise CheckException(
+                f'Probe configuration `{use}` is '
+                'explicitly configured but is not found. '
+                'To resolve this, please create the '
+                'config on the appliance.',
+                severity=Severity.HIGH)
         return {}
 
     use = probe.get('use')
