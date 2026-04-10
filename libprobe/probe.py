@@ -259,7 +259,6 @@ class Probe:
         assert self._dry_run is not None
         asset, config = self._dry_run
         timeout = MAX_CHECK_TIMEOUT
-        local_config = self._get_local_config(asset.id, config.get('_use'))
         check = self._my_checks[asset.check]
         ts = time.time()
 
@@ -267,6 +266,7 @@ class Probe:
         success, failed, no_count = None, None, False
 
         try:
+            local_config = self._get_local_config(asset.id, config.get('_use'))
             try:
                 res = await asyncio.wait_for(
                     check.run(asset, local_config, config),
