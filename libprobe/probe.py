@@ -643,11 +643,11 @@ class Probe:
                 # asset_id and check_key are truly immutable, name is not
                 asset = Asset(asset_id, asset_name, check_key)
 
-            local_config = self._get_local_config(asset.id, config.get('_use'))
-
             logging.debug(f'run check; {asset}')
 
             try:
+                local_config = \
+                    self._get_local_config(asset.id, config.get('_use'))
                 try:
                     res = await asyncio.wait_for(
                         check.run(asset, local_config, config),
