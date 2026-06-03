@@ -563,6 +563,8 @@ class Probe:
             if path not in desired_checks:
                 # the check is no longer required, pop and cancel the task
                 self._checks.pop(path).cancel()
+                # remove previous check result if exists
+                self._prev_checks.pop(path, None)
             elif new_checks_config[path] != self._checks_config[path] and \
                     self._checks[path].cancelled():
                 # this task is desired but has previously been cancelled;
