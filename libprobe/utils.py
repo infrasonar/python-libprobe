@@ -1,5 +1,3 @@
-import uuid
-
 MAX_ITEM_NAME_LEN = 255
 
 
@@ -14,6 +12,11 @@ def order(result: dict):
 
 
 def ensure_item_name(name: object = None, replace_char: str = '?') -> str:
+    """Sanitize a value into a valid, non-empty printable ASCII item name.
+
+    Use when `name` may be bytes, exceed `MAX_ITEM_NAME_LEN`,
+    or contain non-ASCII or control characters.
+    """
     if name is None:
         raw = ""
     elif isinstance(name, bytes):
@@ -30,7 +33,7 @@ def ensure_item_name(name: object = None, replace_char: str = '?') -> str:
         cleaned = cleaned[:MAX_ITEM_NAME_LEN].rstrip()
 
     if not cleaned:
-        return str(uuid.uuid7())
+        raise ValueError("empty name not allowed")
 
     return cleaned
 
