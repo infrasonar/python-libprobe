@@ -26,7 +26,7 @@ from .asset import Asset
 from .config import encrypt, decrypt, get_config
 from .response import UploadFile, FileType
 from .check import Check
-from .utils import order
+from .utils import order, validate_check_result
 
 
 HEADER_FILE = """
@@ -652,10 +652,7 @@ class Probe:
                     res = await asyncio.wait_for(
                         check.run(asset, local_config, config),
                         timeout=timeout)
-                    if not isinstance(res, dict):
-                        raise TypeError(
-                            'expecting type `dict` as check result '
-                            f'but got type `{type(res).__name__}`')
+                    validate_check_result(res)
                 except asyncio.TimeoutError:
                     raise CheckException('timed out')
                 except asyncio.CancelledError:
