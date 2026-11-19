@@ -11,20 +11,21 @@ def order(result: dict):
         items.sort(key=_item_name)
 
 
-def ensure_item_name(name: object = None, replace_char: str = '?') -> str:
+def ensure_item_name(name: object = None, replace_char: str = '?',
+                     empty_name: str = 'no-name') -> str:
     """Sanitize a value into a valid, non-empty printable ASCII item name.
 
-    Use when `name` may be bytes, exceed `MAX_ITEM_NAME_LEN`,
+    Use when `name` may be None/empty, bytes, exceed `MAX_ITEM_NAME_LEN`,
     or contain non-ASCII or control characters.
     """
     if name is None:
-        raw = ""
+        raw = ''
     elif isinstance(name, bytes):
-        raw = name.decode("utf-8", errors="replace")
+        raw = name.decode('utf-8', errors='replace')
     else:
         raw = str(name)
 
-    cleaned = "".join(
+    cleaned = ''.join(
         ch if (ch.isascii() and ch.isprintable()) else replace_char
         for ch in raw
     ).strip()
@@ -33,7 +34,9 @@ def ensure_item_name(name: object = None, replace_char: str = '?') -> str:
         cleaned = cleaned[:MAX_ITEM_NAME_LEN].rstrip()
 
     if not cleaned:
-        raise ValueError("empty name not allowed")
+        if not empty_name:
+            raise ValueError(f'invalid empty_name fallback: {empty_name!r}')
+        return empty_name
 
     return cleaned
 
