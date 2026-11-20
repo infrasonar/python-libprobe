@@ -1,4 +1,4 @@
-MAX_ITEM_NAME_LEN = 255
+MAX_ITEM_NAME_LEN = 1023
 
 
 def _item_name(item: dict) -> str:

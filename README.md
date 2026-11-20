@@ -148,7 +148,7 @@ InfraSonar requires each item to have a unique `name` property. A valid `name` m
 
 - A **non-empty** string.
 - Strictly **printable ASCII** (`0x20`–`0x7E`, no control characters or non-ASCII Unicode).
-- At most **255 characters** in length.
+- At most **1023 characters** in length.
 
 When external sources (such as SNMP, WMI, or third-party APIs) return names that may contain non-ASCII characters, control characters, empty values, or exceed the maximum length, use the `ensure_item_name` utility:
 
