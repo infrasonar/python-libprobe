@@ -142,13 +142,20 @@ probe = Probe("myProbe", '3.0.0', {})
 probe.set_on_close(custom_on_close)
 ```
 
-## ASCII item names
+## Item names
 
-InfraSonar requires each item to have a unique _name_ property. The value for _name_ must be a _string_ with ASCII compatible character.
-When your _name_ is not guaranteed to be ASCII compatible, the following code replaces the incompatible characters with question marks (`?`):
+InfraSonar requires each item to have a unique `name` property. A valid `name` must be:
+
+- A **non-empty** string.
+- Strictly **printable ASCII** (`0x20`–`0x7E`, no control characters or non-ASCII Unicode).
+- At most **1023 characters** in length.
+
+When external sources (such as SNMP, WMI, or third-party APIs) return names that may contain non-ASCII characters, control characters, empty values, or exceed the maximum length, use the `ensure_item_name` utility:
 
 ```python
-name = name.encode('ascii', errors='replace').decode()
+from libprobe.utils import ensure_item_name
+
+name = ensure_item_name(name)
 ```
 
 ## Config
