@@ -129,7 +129,7 @@ if __name__ == "__main__":
     probe.start()
 ```
 
-## On CLose
+## On Close
 
 Using the `set_on_close()` method, it is possible to configure a method which will be called before the probe is stopped.
 This can be useful in case you want to nicely close some connections.
